@@ -81,7 +81,7 @@
                 <span class="author-block">
                   <br>
                   <a target="_blank" href="https://qianhuiwu.github.io/">Qianhui Wu</a><sup>1</sup><sup>*</sup>&nbsp;&nbsp;&nbsp;
-                  <a target="_blank" href="https://github.com/njucckevin/">Kanzhi Cheng</a><sup>2</sup><sup>*</sup>&nbsp;&nbsp;&nbsp;
+                  <a target="_blank" href="https://scholar.google.com/citations?user=S2IPVnwAAAAJ&hl=en&oi=ao/">Kanzhi Cheng</a><sup>2</sup><sup>*</sup>&nbsp;&nbsp;&nbsp;
                   <a target="_blank" href="https://yangrui2015.github.io/">Rui Yang</a><sup>3</sup><sup>*</sup>&nbsp;&nbsp;&nbsp;
                   <a target="_blank" href="">Chaoyun Zhang</a><sup>1</sup>&nbsp;&nbsp;&nbsp;
                   <a target="_blank" href="https://jwyang.github.io/">Jianwei Yang</a><sup>1</sup>&nbsp;&nbsp;&nbsp;
@@ -164,7 +164,7 @@
         <!-- <h2 class="subtitle has-text-centered"> -->
         <p style="font-size: 100%">
           <strong>Left: </strong> Comparison across different GUI visual grounding models in terms of training scale and performance.
-          <strong>Middle: </strong> GUI-Actor with lightweight tuning offers a way to effectively endow the underlying VLM with grounding capabilities without compromising its general-purpose strengths.
+          <strong>Middle: </strong> GUI-Actor with lightweight tuning offers a way to effectively endow the underlying VLM with grounding capabilities without compromising its general-purpose strengths. <span style="color: orange;">Need Update: 2B results to replace the second figure (CKZ)</span>
           <strong>Right: </strong> GUI-Actor grounds target elements by attending to the most relevant visual regions.
         </p>
         
@@ -180,7 +180,7 @@
                 <h3 class="title is-3" style="padding: 0 0 0 0;">Abstract</h3>
                 <div class="content has-text-justified" style="padding-left: 10%; padding-right: 10%;">
                     <p style="font-size: 100%">
-                        One of the principal challenges in building VLM-powered GUI agents is visual grounding—localizing the appropriate screen region for action execution based on both the visual content and the textual plans. Most existing work formulates this as a text-based coordinate generation task. However, these approaches suffer from several limitations: weak spatial-semantic alignment due to the lack of explicit spatial supervision; inability to handle ambiguous supervision targets, as single-point predictions penalize valid variations; and a mismatch between the dense nature of screen coordinates and the coarse, patch-level granularity of visual features extracted by models like Vision Transformers. In this paper, we propose <strong>GUI-Actor</strong>, a VLM-based method for coordinate-free GUI grounding. At its core, <strong>GUI-Actor</strong> introduces an attention-based action head that learns to align a dedicated <i>&lt;ACTOR&gt;</i> token with all relevant visual patch tokens, enabling the model to propose one or more action regions in a single forward pass. In line with this, we design a grounding verifier to evaluate and select the most plausible action region from the candidates proposed for action execution. Extensive experiments show that <strong>GUI-Actor</strong> outperforms prior state-of-the-art methods on multiple GUI action grounding benchmarks, with improved generalization to unseen screen resolutions and layouts. Additionally, we show that by leveraging the verifier, fine-tuning only the newly introduced action head (~100M parameters) while keeping the VLM backbone frozen is sufficient to achieve performance comparable to previous state of the art models, highlighting that <strong>GUI-Actor</strong> can endow the underlying VLM with effective grounding capabilities without compromising its general-purpose strengths.
+                        One of the principal challenges in building VLM-powered GUI agents is visual grounding—localizing the appropriate screen region for action execution based on both the visual content and the textual plans. Most existing work formulates this as a text-based coordinate generation task. However, these approaches suffer from several limitations: weak spatial-semantic alignment due to the lack of explicit spatial supervision; inability to handle ambiguous supervision targets, as single-point predictions penalize valid variations; and a mismatch between the dense nature of screen coordinates and the coarse, patch-level granularity of visual features extracted by models like Vision Transformers. In this paper, we propose <strong>GUI-Actor</strong>, a VLM-based method for coordinate-free GUI grounding. At its core, <strong>GUI-Actor</strong> introduces an attention-based action head that learns to align a dedicated <i>&lt;ACTOR&gt;</i> token with all relevant visual patch tokens, enabling the model to propose one or more action regions in a single forward pass. In line with this, we design a grounding verifier to evaluate and select the most plausible action region from the candidates proposed for action execution. Extensive experiments show that <strong>GUI-Actor</strong> outperforms prior state-of-the-art methods on multiple GUI action grounding benchmarks, with improved generalization to unseen screen resolutions and layouts. Additionally, we show that by leveraging the verifier, fine-tuning only the newly introduced action head (~100M parameters) while keeping the VLM backbone frozen is sufficient to achieve performance comparable to previous state of the art models, highlighting that <strong>GUI-Actor</strong> can endow the underlying VLM with effective grounding capabilities without compromising its general-purpose strengths. <span style="color: orange;">do we need to modify the LiteTrain part?</span>
                     </p>
                 </div>
             </div>
@@ -212,7 +212,7 @@
                         </ul>
                         <p>🎯 <strong>Results:</strong></p>
                         <ul>
-                            <li>GUI-Actor achieves state-of-the-art performance on multiple GUI action grounding benchmarks, demonstrating its effectiveness and generalization to unseen screen resolutions and layouts.</li>
+                            <li>GUI-Actor achieves state-of-the-art performance on multiple GUI action grounding benchmarks with the same backbone Qwen2-VL (as Uground and OS-Atlas), demonstrating its effectiveness and generalization to unseen screen resolutions and layouts.</li>
                             <li>We show that by leveraging the verifier, light-weighted training of our GUI-Actor (i.e., freezing the backbone LLM and fine-tuning only the newly introduced ~100M parameters in the action head) can effectively endow the underlying VLM with grounding capabilities without compromising its general-purpose strengths.</li>
                         </ul>
 
