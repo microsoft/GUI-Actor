@@ -21,7 +21,7 @@
   <script src="./static/js/bulma-slider.min.js"></script>
   <script src="./static/js/index.js"></script>
 
-  <link rel="icon" href="">
+  <link rel="icon" href="./static/images/logo.png">
 
   <script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
   <meta property="og:image:width" content="1600" />
@@ -75,6 +75,7 @@
           <div class="columns is-centered">
             <div class="column has-text-centered">
               <div style="display: flex; align-items: center; justify-content: center;">
+                <img src="./static/images/logo.png" alt="GUI-Actor Logo" style="margin-right: 5px; height: 80px;margin-top: -10px;">
                 <h1 class="title is-2 publication-title">GUI-Actor: Coordinate-Free Visual Grounding for GUI Agents</h1>
               </div>
               <div class="is-size-5 publication-authors">
@@ -101,7 +102,7 @@
                   
                   <br>
                   <sup>1</sup>Microsoft Research&nbsp;&nbsp;&nbsp;&nbsp;<sup>2</sup>Nanjing University&nbsp;&nbsp;&nbsp;&nbsp;<sup>3</sup>University of Illinois Urbana-Champaign&nbsp;&nbsp;&nbsp;&nbsp;<br>
-                  <sup>*</sup>First authors.&nbsp;&nbsp;&nbsp;&nbsp;<sup>†</sup>Leadership
+                  <sup>*</sup>Equal Contribution&nbsp;&nbsp;&nbsp;&nbsp;<sup>†</sup>Leadership
                 </span>
               </div>
               <div class="column has-text-centered">
@@ -162,10 +163,9 @@
         </div>  
         <br> 
         <!-- <h2 class="subtitle has-text-centered"> -->
-        <p style="font-size: 100%">
-          <strong>Left: </strong> Comparison across different GUI visual grounding models in terms of training scale and performance.
-          <strong>Middle: </strong> GUI-Actor with lightweight tuning offers a way to effectively endow the underlying VLM with grounding capabilities without compromising its general-purpose strengths. <span style="color: orange;">Need Update: 2B results to replace the second figure (CKZ)</span>
-          <strong>Right: </strong> GUI-Actor grounds target elements by attending to the most relevant visual regions.
+        <p style="font-size: 100%"><strong>Figure 1.</strong>
+          <strong>Left: </strong> Model performance vs. training data scale on the ScreenSpot-Pro benchmark. Higher and more left is better; larger points indicate models with more parameters.
+          <strong>Right: </strong>  Illustration of action attention. GUI-Actor grounds target elements by attending to the most relevant visual regions.
         </p>
         
       </div>
@@ -180,8 +180,11 @@
                 <h3 class="title is-3" style="padding: 0 0 0 0;">Abstract</h3>
                 <div class="content has-text-justified" style="padding-left: 10%; padding-right: 10%;">
                     <p style="font-size: 100%">
-                        One of the principal challenges in building VLM-powered GUI agents is visual grounding—localizing the appropriate screen region for action execution based on both the visual content and the textual plans. Most existing work formulates this as a text-based coordinate generation task. However, these approaches suffer from several limitations: weak spatial-semantic alignment due to the lack of explicit spatial supervision; inability to handle ambiguous supervision targets, as single-point predictions penalize valid variations; and a mismatch between the dense nature of screen coordinates and the coarse, patch-level granularity of visual features extracted by models like Vision Transformers. In this paper, we propose <strong>GUI-Actor</strong>, a VLM-based method for coordinate-free GUI grounding. At its core, <strong>GUI-Actor</strong> introduces an attention-based action head that learns to align a dedicated <i>&lt;ACTOR&gt;</i> token with all relevant visual patch tokens, enabling the model to propose one or more action regions in a single forward pass. In line with this, we design a grounding verifier to evaluate and select the most plausible action region from the candidates proposed for action execution. Extensive experiments show that <strong>GUI-Actor</strong> outperforms prior state-of-the-art methods on multiple GUI action grounding benchmarks, with improved generalization to unseen screen resolutions and layouts. Additionally, we show that by leveraging the verifier, fine-tuning only the newly introduced action head (~100M parameters) while keeping the VLM backbone frozen is sufficient to achieve performance comparable to previous state of the art models, highlighting that <strong>GUI-Actor</strong> can endow the underlying VLM with effective grounding capabilities without compromising its general-purpose strengths. <span style="color: orange;">do we need to modify the LiteTrain part?</span>
-                    </p>
+                        One of the principal challenges in building VLM-powered GUI agents is visual grounding—localizing the appropriate screen region for action execution based on both the visual content and the textual plans. Most existing work formulates this as a text-based coordinate generation task. However, these approaches suffer from several limitations: weak spatial-semantic alignment due to the lack of explicit spatial supervision; inability to handle ambiguous supervision targets, as single-point predictions penalize valid variations; and a mismatch between the dense nature of screen coordinates and the coarse, patch-level granularity of visual features extracted by models like Vision Transformers. In this paper, we propose GUI-Actor, a VLM-based method for coordinate-free GUI grounding. At its core, GUI-Actor introduces an attention-based action head that learns to align a dedicated <i>&lt;ACTOR&gt;</i> token with all relevant visual patch tokens, enabling the model to propose one or more action regions in a single forward pass. In line with this, we further design a grounding verifier to evaluate and select the most plausible action region from the candidates proposed for action execution.
+                        Extensive experiments show that GUI-Actor outperforms prior state-of-the-art methods on multiple GUI action grounding benchmarks, with improved generalization to unseen screen resolutions and layouts.
+                        Notably GUI-Actor-7B (40.7) even surpasses UI-TARS-72B (38.1) on ScreenSpot-Pro, with much fewer parameters and training data.
+                        Furthermore, by incorporating the verifier, we find that fine-tuning only the newly introduced action head (~100M parameters) while keeping the VLM backbone frozen is sufficient to achieve performance comparable to previous state-of-the-art models, highlighting that GUI-Actor can endow the underlying VLM with effective grounding capabilities without compromising its general-purpose strengths.
+                      </p>
                 </div>
             </div>
         </div>
@@ -212,7 +215,7 @@
                         </ul>
                         <p>🎯 <strong>Results:</strong></p>
                         <ul>
-                            <li>GUI-Actor achieves state-of-the-art performance on multiple GUI action grounding benchmarks with the same backbone Qwen2-VL (as Uground and OS-Atlas), demonstrating its effectiveness and generalization to unseen screen resolutions and layouts.</li>
+                            <li>GUI-Actor achieves state-of-the-art performance on multiple GUI action grounding benchmarks, demonstrating its effectiveness and generalization to unseen screen resolutions and layouts. Notably, GUI-Actor-2B even surpasses UI-TARS-72B on ScreenSpot-Pro.</li>
                             <li>We show that by leveraging the verifier, light-weighted training of our GUI-Actor (i.e., freezing the backbone LLM and fine-tuning only the newly introduced ~100M parameters in the action head) can effectively endow the underlying VLM with grounding capabilities without compromising its general-purpose strengths.</li>
                         </ul>
 
@@ -223,7 +226,7 @@
                 </div>
                 <div class="row is-full-width">
                     <div class="content has-text-justified">
-                        <p>
+                        <p> <strong>Figure 2. </strong>Overview of GUI-Actor.</strong>
                             <strong>Left: </strong> Illustration of how the action head works with a VLM for coordinate-free GUI grounding.
                             <strong>Right: </strong> Illustration of the spatial-aware multi-patch supervision for model training. We label all image patches that are partially or fully covered by the ground-truth bounding box as positive (1) and all others as negatives (0).
                         </p>
@@ -244,21 +247,77 @@
             <div class="row is-full-width">
                 <!--h3 class="title is-4"><span class="dvima">Main Result</span></h3-->
                 <p>
-                    Table 1, Table 2, and Table 3 present performance comparisons on ScreenSpot, ScreenSpot-v2, and ScreenSpot-Pro benchmarks, respectively. Our method, <i>GUI-Actor</i>, consistently outperforms existing state-of-the-art approaches across all benchmarks, with the exception of UI-TARS-7B. While UI-TARS-7B achieves strong performance, it benefits from training on a significantly larger dataset that includes both public and proprietary data. Additionally, it undergoes a more extensive training pipeline, including continual pre-training, an annealing phase, and a final stage of direct preference optimization (DPO). Although our model is trained solely with supervised fine-tuning, it achieves competitive or even superior results on ScreenSpot-Pro, demonstrating its strong capability and potential.
+                    Table 1, 2, 3, and 4 present performance comparisons on ScreenSpot-Pro, ScreenSpot, and ScreenSpot-v2 benchmarks. Our <i>GUI-Actor-2B</i> and <i>GUI-Actor-7B</i>, consistently outperform existing state-of-the-art methods across all benchmarks, with the 2B model even surpassing many competing 7B models. While there is one exception UI-TARS-7B achieving stronger performance, it benefits from training on a significantly larger dataset that includes both public and proprietary data (see Figure 1). Additionally, it undergoes a more extensive training pipeline, including continual pre-training, an annealing phase, and a final stage of direct preference optimization (DPO). Although our models are trained solely with supervised fine-tuning, they achieve competitive or even superior results on ScreenSpot-Pro, demonstrating its strong capability and potential.
                 </p>
             </div>
             
             <div class="row is-full-width" style="margin-top: 20px;">
-                <p>Table 1. Performance comparison on ScreenSpot. In <i>GUI-Actor w/ LiteTrain</i>, the backbone VLM is frozen, and only the newly introduced parameters (~100M) are updated during training.</p>
+              <p><strong>Table 1.</strong> Performance comparison on <strong><i>ScreenSpot-Pro</i></strong>, which features higher-resolution interfaces and greater domain shift (<i>e.g.</i>, industrial software, multi-window layouts), serving as a practical testbed for generalization.</p>
+            </div>
+            <div class="row is-full-width is-centered" style="text-align: center;">
+                <img src="./static/images/actor_results_ss_pro.png" width="80%" style="border-radius: 5px;display: inline-block;padding: 0 10px 0 0px;margin: 0 auto;" alt=''>
+            </div>
+
+            <div class="row is-full-width" style="margin-top: 20px;">
+              <p><strong>Table 2.</strong> Performance comparison on <strong><i>ScreenSpot</i></strong>.</p>
             </div>
             <div class="row is-full-width is-centered" style="text-align: center;">
                 <img src="./static/images/actor_results_ss.png" width="80%" style="border-radius: 5px;display: inline-block;padding: 0 10px 0 0px;margin: 0 auto;" alt=''>
+            </div>
+
+            <div class="row is-full-width" style="margin-top: 20px;">
+              <p><strong>Table 3.</strong> Performance comparison on <strong><i>ScreenSpot-v2</i></strong>. † indicates results obtained from our ouwn evaluation of the official model on Huggingface.</p>
+            </div>
+            <div class="row is-full-width is-centered" style="text-align: center;">
+                <img src="./static/images/actor_results_ss_v2.png" width="80%" style="border-radius: 5px;display: inline-block;padding: 0 10px 0 0px;margin: 0 auto;" alt=''>
+            </div>
+
+            <div class="row is-full-width" style="margin-top: 20px;">
+              <p><strong>Table 4.</strong> Performance comparison of models based on the <strong><i>Qwen-2.5-VL</i></strong> backbone.</p>
+            </div>
+            <div class="row is-full-width is-centered" style="text-align: center;">
+                <img src="./static/images/actor_results_qwen25vl.png" width="80%" style="border-radius: 5px;display: inline-block;padding: 0 10px 0 0px;margin: 0 auto;" alt=''>
             </div>
         </div>
     </div>
 </div>
 </section>
 
+<section>
+  <div class="container is-max-desktop">
+      <div class="rows">
+          <div class="rows is-centered">
+              <div class="row is-full-width">
+                  <h2 class="title is-3" style="padding-top: 40px;"><span class="dvima">Robust Out-of-Distribution Generalization</span></h2>
+              </div>
+              <div class="row is-full-width" style="margin-top: 20px;">
+                  <p>As shown in Table 1 and Table 4, GUI-Actor models demonstrate strong performance on ScreenSpot-Pro—an out-of-distribution benchmark characterized by higher resolutions and substantial domain shifts from the training data—surpassing the previous state-of-the-art UI-TARS model by +9.0 and +5.0 points with 2B and 7B parameters, respectively. We attribute this gain to explicit spatial-semantic alignment: unlike coordinate-based approaches such as UI-TARS, GUI-Actor leverages an attention-based action head that grounds semantic cues directly in discrete visual regions. This design embeds a stronger spatial inductive bias and naturally aligns with the patch-based representations of modern vision backbones. As a result, GUI-Actor is better equipped to reason over localized visual content, enabling robust generalization across diverse screen resolutions and UI layouts.</p>
+              </div>
+          </div>
+      </div>
+  </div>
+</section>
+
+<section>
+  <div class="container is-max-desktop">
+      <div class="rows">
+          <div class="rows is-centered">
+              <div class="row is-full-width">
+                  <h2 class="title is-3" style="padding-top: 40px;"><span class="dvima">Enabling backbone VLM grounding on GUIs without sacrificing general-purpose strengths.</span></h2>
+              </div>
+              <div class="row is-full-width" style="margin-top: 20px;">
+                  <p>We introduce a variant, <i>GUI-Actor-LiteTrain</i>, where we freeze all backbone VLM parameters and train only the newly introduced components for the action head (~100M parameters). This setup explores how GUI-Actor can impart GUI grounding capabilities without diminishing the VLM's general-purpose strengths. As shown in Table 5, <i>GUI-Actor-LiteTrain</i> yields substantial performance improvements over the unmodified backbone VLM. With the help of a grounding verifier, it even rivals fully fine-tuned coordinate generation models. These results suggest that the backbone VLM already exhibits strong perceptual understanding of UI screenshots. As such, training the model to generate coordinates in text format may primarily focus on coordinate mapping, offering limited contribution to the semantic understanding of UI elements. More importantly, <i>GUI-Actor-LiteTrain</i> retains the backbone's original language and vision-language capabilities, demonstrating that lightweight integration can enable grounding without compromising generality.</p>
+              </div>
+              <div class="row is-full-width">
+                  <p><strong>Table 5. </strong>Analysis on lightweight training (<i>-LiteTrain</i>), where the backbone VLM (<i>e.g.</i>, Qwen-2-VL) is frozen, and only the newly introduced parameters (~100M for the action head and special tokens) are updated during training.</p>
+              </div>
+              <div class="row is-full-width is-centered" style="text-align: center;">
+                <img src="./static/images/actor_litetrain.png" alt="" width="70%" style="border-radius: 5px;display: inline-block;padding: 0 10px 0 0px;margin: 0 auto;">
+              </div>
+          </div>
+      </div>
+  </div>
+</section>
 
 
 <section>
@@ -266,30 +325,30 @@
         <div class="rows">
             <div class="rows is-centered">
                 <div class="row is-full-width">
-                    <h2 class="title is-3" style="padding-top: 40px;"><span class="dvima">Study on Top-K Prediction</span></h2>
+                    <h2 class="title is-3" style="padding-top: 40px;"><span class="dvima">Multi-Region Prediction Without Extra Inference Cost</span></h2>
                 </div>
                 <div class="row is-full-width" style="margin-top: 20px;">
-                    <p>Figure (a) below illustrates a significant performance gain from Hit@1 to Hit@3 for our method, whereas the gap for baselines is relatively marginal. In our analysis, we observed that for coordinate-generation–based baselines, even when multiple predictions are sampled, the outputs are mostly identical, e.g., shifting slightly from (0.898, 0.667) to (0.899, 0.666). In contrast, our model simultaneously produces multiple candidate regions from the attention distribution in a single forward pass. These candidates are mutually exclusive, naturally promoting diversity and increasing the chance of capturing all valid action regions. Figure (b) below provides a qualitative example where our approach successfully identifies all ground-truth regions required for action execution.</p>
+                    <p>Due to its attention-based grounding mechanism, GUI-Actor can generate multiple candidate action regions in a single forward pass, incurring no extra inference cost. To evaluate the effectiveness of these high-probability regions, we use the Hit@k metric, where k represents the number of top-ranked predictions considered. Figure 3a shows that GUI-Actor exhibits a substantial improvement from Hit@1 to Hit@3, whereas the gap for baselines is relatively marginal. In our analysis, we observed that for coordinate-generation-based baselines, even when multiple predictions are sampled, the outputs are mostly identical, e.g., shifting slightly from (0.898, 0.667) to (0.899, 0.666). In contrast, our model simultaneously produces multiple candidate regions from the attention distribution in a single forward pass. These candidates are mutually exclusive, naturally promoting diversity and increasing the chance of capturing all valid action regions. Figure 3b provides a qualitative example where our approach successfully identifies all ground-truth regions required for action execution.</p>
                 </div>
                 <div class="row is-full-width" style="margin-top: 20px;">
                     <img src="./static/images/actor_hit3.png" alt="" width="50%">
-                    <img src="./static/images/actor_attention_weight_multiple.png" alt="" width="50%">
+                    <img src="./static/images/actor_attn.png" alt="" width="50%">
                 </div>
                 <div class="row is-full-width" style="display: flex; justify-content: space-between;">
                     <div class="column" style="text-align: left; width: 50%;">
                         <p>
-                            (a) Hit@1 and Hit@3 for different methods. For Aguvis baselines, we run inference 3 times with temperature = 1.0, top_p = 0.95.
+                            (a) Hit@1 and Hit@3 for different models.
                         </p>
                     </div>
                     <div class="column" style="text-align: left; width: 50%;">
                         <p>
-                            (b) Illustration of multi-region prediction. In this example, the instruction is "check shopping cart", while the ground truth is only the top-right icon.
+                            (b) GUI-Actorcancapturemultiplepotentialregions.
                         </p>
                     </div>
                 </div>
-                <!--div class="row is-full-width">
-                    <p>Figure. (a) Hit@1 and Hit@3 for different methods. For Aguvis baselines, we run inference 3 times with temperature = 1.0, top_p = 0.95. (b) Illustration of multi-region prediction. In this example, the instruction is "check shopping cart", while the ground truth is only the top-right icon.</p>
-                </div-->
+                <div class="row is-full-width">
+                    <p><strong>Figure 3. </strong>(a) Hit@1 and Hit@3 for different methods. For Aguvis baselines, we run inference 3 times with temperature = 1.0, top_p = 0.95. (b) Illustration of multi-region prediction. In this example, the instruction is "check shopping cart" and the central "shopping cart'' text is clickable, while the ground truth is only the top-right icon.</p>
+                </div>
             </div>
         </div>
     </div>
@@ -323,6 +382,7 @@
                 Website adapted from <a style="color:hsla(194, 67%, 58%, 0.862)" href="https://github.com/nerfies/nerfies.github.io">NeRFies</a> and <a style="color:hsla(194, 67%, 58%, 0.862)" href="https://microsoft.github.io/Magma/">Magma</a> under <a style="color:hsla(194, 67%, 58%, 0.862)"
                 href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International</a>
             </p>
+            <p>© 2025 Microsoft</p>
             </div>
         </div>
         </div>
