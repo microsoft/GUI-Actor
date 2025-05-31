@@ -75,7 +75,7 @@
           <div class="columns is-centered">
             <div class="column has-text-centered">
               <div style="display: flex; align-items: center; justify-content: center;">
-                <img src="./static/images/logo.png" alt="GUI-Actor Logo" style="margin-right: 5px; height: 80px;margin-top: -10px;">
+                <img src="./static/images/logo.png" alt="GUI-Actor Logo" style="margin-right: 15px; height: 80px;margin-top: -10px;">
                 <h1 class="title is-2 publication-title">GUI-Actor: Coordinate-Free Visual Grounding for GUI Agents</h1>
               </div>
               <div class="is-size-5 publication-authors">
@@ -164,7 +164,7 @@
         <br> 
         <!-- <h2 class="subtitle has-text-centered"> -->
         <p style="font-size: 100%"><strong>Figure 1.</strong>
-          <strong>Left: </strong> Model performance vs. training data scale on the ScreenSpot-Pro benchmark. Higher and more left is better; larger points indicate models with more parameters.
+          <strong>Left: </strong> Model performance vs. training data scale on the ScreenSpot-Pro. Higher and more left is better; larger points indicate models with more parameters.
           <strong>Right: </strong>  Illustration of action attention. GUI-Actor grounds target elements by attending to the most relevant visual regions.
         </p>
         
@@ -200,9 +200,12 @@
                     <div class="content has-text-justified">
                         <p>🤔 <strong>There are several <span style="color: rgb(182, 30, 30);">intrinsic limitations</span> in the existing <span style="color: rgb(182, 30, 30);">coordinate-generation based methods</span> (i.e., output screen positions as text tokens x=..., y=...) for GUI grounding:</strong></p>
                         <ul>
-                            <li><i>Spatial-semantic alignment is weak</i>: generating discrete coordinate tokens requires the model to implicitly map visual inputs to numeric outputs via a language modeling head, without any explicit spatial inductive bias. This process is inefficient, data-intensive, and prone to errors due to the lack of direct supervision linking visual features to action locations.</li>
+                            <!-- <li><i>Spatial-semantic alignment is weak</i>: generating discrete coordinate tokens requires the model to implicitly map visual inputs to numeric outputs via a language modeling head, without any explicit spatial inductive bias. This process is inefficient, data-intensive, and prone to errors due to the lack of direct supervision linking visual features to action locations.</li>
                             <li><i>Supervision signals are ambiguous</i>: many GUI actions, such as clicking within a button, allow for a range of valid target positions. However, coordinate-based methods typically treat the task as single-point prediction, penalizing all deviations—even reasonable ones—and failing to capture the natural ambiguity of human interaction.</li>
-                            <li><i>Granularity mismatch between vision and action space</i>: while coordinates are continuous and high-resolution, vision models like Vision Transformers (ViTs) operate on patch-level features. This mismatch forces the model to infer dense, pixel-level actions from coarse visual tokens, which undermines generalization to diverse screen layouts and resolutions.</li>
+                            <li><i>Granularity mismatch between vision and action space</i>: while coordinates are continuous and high-resolution, vision models like Vision Transformers (ViTs) operate on patch-level features. This mismatch forces the model to infer dense, pixel-level actions from coarse visual tokens, which undermines generalization to diverse screen layouts and resolutions.</li> -->
+                            <li><i>Spatial-semantic alignment is weak</i>: Mapping visual inputs to numeric coordinates via language modeling lacks explicit spatial inductive bias.</li>
+                            <li><i>Single-point supervision is ambiguous</i>: Simplifying GUI element boxes to single click points penalizes valid deviations and makes training inefficient.</li>
+                            <li><i>Granularity mismatch between vision and action space</i>: Patch-level features (ViT) vs. fine-grained coordinates lead to a generalization gap.</li>
                         </ul>
                     
                         <p>💡 <strong>Rethink how humans interact with digital interfaces: <span style="color: rgb(182, 30, 30);">humans do NOT calculate precise screen coordinates before acting—they perceive the target element and interact with it directly.</strong></p>
