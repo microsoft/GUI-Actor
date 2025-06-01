@@ -1,0 +1,19 @@
+datasets:
+  - json_path: /mnt/datasets/Uground/uground_aguvis_bbox_filter.json
+    images_folder: /mnt/datasets/Uground/images/
+    sampling_strategy: "all"
+  - json_path: /mnt/datasets/GUIEnv/guienv_aguvis_bbox.json
+    images_folder: /mnt/datasets/GUIEnv/guienvs/images/
+    sampling_strategy: "all"
+  - json_path: /mnt/datasets/GUIAct/guiact_aguvis_bbox.json
+    images_folder: /mnt/datasets/GUIAct/web_imgs/
+    sampling_strategy: "all"
+  - json_path: /mnt/datasets/AMEX/amex_aguvis_bbox.json
+    images_folder: /mnt/datasets/AMEX/screenshots/
+    sampling_strategy: "all"
+  - json_path: /mnt/datasets/AndroidControl/androidcontrol_aguvis_bbox.json
+    images_folder: /mnt/datasets/AndroidControl/tfrecord/images/
+    sampling_strategy: "all"
+  - json_path: /mnt/datasets/Wave-UI/wave_ui_aguvis_bbox_fixed.json
+    images_folder: /mnt/datasets/Wave-UI/images_fixed/
+    sampling_strategy: "all"

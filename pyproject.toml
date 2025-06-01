@@ -1,0 +1,116 @@
+[project]
+name = "aguvis"
+version = "0.1.0"
+description = "A unified pure vision-based framework for autonomous GUI agents that can operate across various platforms (web, desktop, mobile)"
+authors = [
+    {name = "AGUVIS team"},
+]
+dependencies = [
+    "pre-commit>=3.7.1",
+    "pip>=24.1.1",
+    "Pillow>=10.4.0",
+    "liger-kernel==0.5.2",
+    "opencv-python-headless>=4.10.0.84",
+    "accelerate==1.1.1",
+    "qwen-vl-utils==0.0.8",
+    "deepspeed==0.16.0",
+    "transformers==4.47.1",
+    "flash-attn",
+    "wandb==0.18.3"
+]
+requires-python = ">=3.10,<3.13"
+readme = "README.md"
+license = {text = "MIT"}
+
+
+[tool.pdm]
+distribution = false
+
+[tool.pdm.dev-dependencies]
+test = [
+    "pytest>=8.2.2",
+]
+[tool.ruff]
+target-version = 'py38'
+line-length = 120  # Must agree with Black
+
+[tool.ruff.lint]
+select = [
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "D",  # pydocstyle
+    "E",  # Error
+    "F",  # pyflakes
+    "I",  # isort
+    "ISC", # flake8-implicit-str-concat
+    "N",  # pep8-naming
+    "PGH",  # pygrep-hooks
+    # "PTH", # flake8-use-pathlib
+    "Q",  # flake8-quotes
+    "SIM",  # flake8-simplify
+    "TRY",  # tryceratops
+    "UP",  # pyupgrade
+    "W",  # Warning
+    "YTT", # flake8-2020
+]
+
+exclude = [
+    "migrations",
+    "__pycache__",
+    "manage.py",
+    "settings.py",
+    "env",
+    ".env",
+    "venv",
+    ".venv",
+]
+
+ignore = [
+    "B905",  # zip strict=True; remove once python <3.10 support is dropped.
+    "D100",
+    "D101",
+    "D102",
+    "D103",
+    "D104",
+    "D105",
+    "D106",
+    "D107",
+    "D200",
+    "D401",
+    "E402",
+    "E501",
+    "TRY003",  # Avoid specifying messages outside exception class; overly strict, especially for ValueError
+    "N812",
+]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = [
+    "chr",
+    "typer.Argument",
+    "typer.Option",
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*.py" = [
+    "D100",
+    "D101",
+    "D102",
+    "D103",
+    "D104",
+    "D105",
+    "D106",
+    "D107",
+    "S101",  # use of "assert"
+    "S102",  # use of "exec"
+    "S106",  # possible hardcoded password.
+    "PGH001",  # use of "eval"
+]
+
+[tool.ruff.lint.pep8-naming]
+staticmethod-decorators = [
+    "pydantic.validator",
+    "pydantic.root_validator",
+]
