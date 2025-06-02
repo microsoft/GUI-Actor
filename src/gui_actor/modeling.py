@@ -3,9 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from transformers.models.qwen2_vl.modeling_qwen2_vl import *
-from aguvis.constants import IGNORE_INDEX
+from gui_actor.constants import IGNORE_INDEX
 from typing import List, Tuple, Union, Optional
-from aguvis.trainer import rank0_print
+from gui_actor.trainer import rank0_print
 
 class QwenVLwithVisionHeadOutputWithPast(Qwen2VLCausalLMOutputWithPast):
     """

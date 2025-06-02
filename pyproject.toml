@@ -1,9 +1,9 @@
 [project]
-name = "aguvis"
+name = "gui-actor"
 version = "0.1.0"
-description = "A unified pure vision-based framework for autonomous GUI agents that can operate across various platforms (web, desktop, mobile)"
+description = "Coordinate-Free Visual Grounding for GUI Agents"
 authors = [
-    {name = "AGUVIS team"},
+    {name = "GUI-Actor team"},
 ]
 dependencies = [
     "pre-commit>=3.7.1",

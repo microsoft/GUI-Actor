@@ -13,19 +13,19 @@ from transformers import (
     Qwen2VLProcessor,
 )
 
-from aguvis.constants import IGNORE_INDEX
-from aguvis.dataset import LazySupervisedDataset
-from aguvis.trainer import AGUVISTrainer, rank0_print, safe_save_model_for_hf_trainer
-from aguvis.utils import dump_args_to_json
+from gui_actor.constants import IGNORE_INDEX
+from gui_actor.dataset import LazySupervisedDataset
+from gui_actor.trainer import AGUVISTrainer, rank0_print, safe_save_model_for_hf_trainer
+from gui_actor.utils import dump_args_to_json
 
-from aguvis.constants import (
+from gui_actor.constants import (
     ADDITIONAL_SPECIAL_TOKENS,
     DEFAULT_POINTER_START_TOKEN,
     DEFAULT_POINTER_END_TOKEN,
     DEFAULT_POINTER_PAD_TOKEN,
 )
 
-from aguvis.modeling import Qwen2VLForConditionalGenerationWithPointer
+from gui_actor.modeling import Qwen2VLForConditionalGenerationWithPointer
 
 apply_liger_kernel_to_qwen2_vl()
 

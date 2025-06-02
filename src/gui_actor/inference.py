@@ -1,11 +1,64 @@
 import torch
-from qwen_vl_utils import process_vision_info
-from transformers import LogitsProcessor, LogitsProcessorList
 import json
 import re
 import os
+from qwen_vl_utils import process_vision_info
+from transformers import (
+    Qwen2VLForConditionalGeneration,
+    LogitsProcessor,
+    LogitsProcessorList,
+    AutoModelForCausalLM,
+    AutoTokenizer
+)
+from gui_actor.constants import (
+    DEFAULT_POINTER_END_TOKEN,
+    DEFAULT_POINTER_PAD_TOKEN,
+    chat_template
+)
 
-from aguvis.constants import chat_template
+class ForceFollowTokensLogitsProcessor(LogitsProcessor):
+    """
+    Forces tokens B (pointer_pad_token) and C (pointer_end_token) to follow token A (pointer_start_token).
+    Whenever token_a_id is generated, enqueue the forced_sequence (e.g. [B, C]).
+    As long as forced tokens remain in the queue, force them in the output.
+    """
+    def __init__(self, token_a_id, forced_sequence=[DEFAULT_POINTER_PAD_TOKEN, DEFAULT_POINTER_END_TOKEN]):
+        super().__init__()
+        self.token_a_id = token_a_id
+        self.forced_sequence = forced_sequence  # list of token IDs, e.g. [B_id, C_id]
+        self.force_queue = []  # holds the tokens we still need to force
+
+    def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor) -> torch.FloatTensor:
+        """
+        Called at each decoding step to modify `scores`.
+        
+        Args:
+            input_ids: shape (batch_size, seq_len). The already-decoded tokens.
+            scores:    shape (batch_size, vocab_size). Model logits for the next token.
+        """
+        batch_size = input_ids.shape[0]
+        if batch_size > 1:
+            raise NotImplementedError("Batch size must be 1 for this logits processor.")
+        
+        # We assume batch_size=1 for simplicity; if you have multiple sequences,
+        # you'll need to adapt the logic to handle each item in the batch.
+        last_token_id = input_ids[0, -1].item()
+
+        # If the last token was A, enqueue B and C
+        if last_token_id == self.token_a_id:
+            self.force_queue.extend(self.forced_sequence)
+        
+        # If we have forced tokens waiting in the queue, override the distribution
+        if len(self.force_queue) > 0:
+            forced_token = self.force_queue.pop(0)  # next token to force
+            # Create a mask of -inf for all tokens except the forced one
+            new_scores = torch.full_like(scores, float('-inf'))
+            new_scores[0, forced_token] = 0.0  # log prob = 0 => prob = 1
+            return new_scores
+        
+        # Otherwise, return scores unmodified
+        return scores
+
 
 def prepare_inputs(messages, data_processor, assistant_message=""):
     """
@@ -39,7 +92,6 @@ def prepare_inputs(messages, data_processor, assistant_message=""):
                                               add_generation_prompt=False,
                                               chat_template=chat_template)
     if assistant_message is not None:
-        # e.g., assistant_message = "<|im_start|>assistant<|recipient|>os\npyautogui.click(<|pointer_start|><|pointer_pad|><|pointer_end|>)"
         text += assistant_message
 
     image_inputs, video_inputs = process_vision_info(messages)
@@ -269,82 +321,3 @@ def inference(model, tokenizer, inputs, data_processor, logits_processors: list[
             print(f"{v:.4f} {p}")
 
     return output_text, topk_points, topk_values, topk_points_all, attn_scores.tolist()
-
-
-"""python src/aguvis/inference.py"""
-if __name__ == "__main__":
-    from transformers import Qwen2VLProcessor
-    from aguvis.modeling import Qwen2VLForConditionalGenerationWithPointer
-    from aguvis.decoding_utils import ForceFollowTokensLogitsProcessor
-    from aguvis.constants import DEFAULT_POINTER_PAD_TOKEN, DEFAULT_POINTER_END_TOKEN, grounding_system_message
-    from aguvis.utils import draw_bbox, draw_point
-    from PIL import Image
-    
-    model_name_or_path = "/home/qianhuiwu/blob/qianhuiwu_checkpoints/aguvis/qwen2vl7binstruct_stage1_ep5_lr0.0001_bs4_mml24576_ufallFalse_ufpnTrue_uflmFalse_ufbmFalse_ufntTrue_ufvFalse_ploss1.0_lmloss-1.0_input_embeds_mlp_all_data"
-    POINTER_ONLY = True # whether to use pointer only
-
-    # load model and processor
-    data_processor = Qwen2VLProcessor.from_pretrained(model_name_or_path)
-    tokenizer = data_processor.tokenizer
-    for k, v in tokenizer.added_tokens_encoder.items():
-        print(v, k)
-
-    model = Qwen2VLForConditionalGenerationWithPointer.from_pretrained(
-        model_name_or_path,
-        torch_dtype=torch.bfloat16,
-        device_map="cuda:0",
-        attn_implementation="flash_attention_2"
-    ).eval()
-
-    logits_processor_pointer = ForceFollowTokensLogitsProcessor(
-        token_a_id=tokenizer.encode(DEFAULT_POINTER_PAD_TOKEN)[0],
-        forced_sequence=[
-            tokenizer.encode(DEFAULT_POINTER_END_TOKEN)[0]
-        ]
-    )
-
-    example = [
-        {
-            "role": "system",
-            "content": [
-                {
-                    "type": "text",
-                    "text": grounding_system_message
-                }
-            ]
-        },
-        {
-            "role": "user",
-            "content": [
-                {
-                    "type": "image",
-                    "image": "/home/qianhuiwu/blob/qianhuiwu_main/aguvis/stage1/omniact/images/train_2648.png"
-                },
-                {
-                    "type": "text",
-                    "text": "Invite a friend 'abc@example.com' to the event"
-                },
-            ],
-        },
-    ]
-
-    assistant_message = "" if not POINTER_ONLY else "<|im_start|>assistant<|recipient|>os\npyautogui.click(<|pointer_start|><|pointer_pad|><|pointer_end|>)"
-    inputs = prepare_inputs(example, data_processor, assistant_message)
-
-    output_text, topk_points, topk_values = inference(model, tokenizer, inputs, data_processor,
-                                    logits_processors=[logits_processor_pointer],
-                                    pointer_only=POINTER_ONLY,
-                                    topk=3,
-                                    verbose=True)
-
-    if topk_points is not None:
-        image = Image.open(example[1]["content"][0]["image"])
-        image_width, image_height = image.size
-        point_x, point_y = topk_points[0]
-
-        display_image = draw_point(image, (point_x * image_width, point_y * image_height), color='green')
-
-        for i, (point_x, point_y) in enumerate(topk_points[1:]):
-            display_image = draw_point(display_image, (point_x * image_width, point_y * image_height), color='gray')
-        
-        display_image.save("tmp_results.png")

@@ -13,7 +13,7 @@ import yaml
 from qwen_vl_utils import smart_resize, process_vision_info
 from torch.utils.data import Dataset
 
-from aguvis.constants import (
+from gui_actor.constants import (
     IGNORE_INDEX,
     DEFAULT_IMAGE_TOKEN,
     DEFAULT_POINTER_START_TOKEN,
@@ -25,7 +25,7 @@ from aguvis.constants import (
     chat_template,
     grounding_system_message,
 )
-from aguvis.trainer import rank0_print
+from gui_actor.trainer import rank0_print
 
 
 def reformat_coordinates(text):
@@ -504,24 +504,6 @@ class LazySupervisedDataset(Dataset):
         # make the labels of all pointer_end_token_id to be IGNORE_INDEX
         target = [IGNORE_INDEX if token == self.pointer_end_token_id else token for token in target]
 
-        # with open(f"tmp.example.{id}", "w") as f:
-        #     f.write(f"id: {id}\n")
-        #     f.write(f"image: {image}\n")
-        #     f.write(f"visual_token_indices_of_coordinates ({len(visual_token_indices_of_coordinates)}): {visual_token_indices_of_coordinates}\n")
-        #     f.write(f"coordinates ({len(coordinates)}): {coordinates}\n")
-        #     f.write(f"pixel_values.shape: {pixel_values.shape}\n")
-        #     f.write(f"image_grid_thw: {image_grid_thw}\n")
-        #     f.write(f"--------------------------------\n")
-        #     convs = tokenizer.decode(input_id)
-        #     n_image_token = convs.count("<|image_pad|>")
-        #     convs = convs.replace("<|image_pad|>" * n_image_token, f"<|image_pad|> x {n_image_token}")
-        #     f.write(f"{convs}\n")
-        #     f.write(f"--------------------------------\n")
-        #     if len(input_id) != len(target):
-        #         raise ValueError(f"The length of input_id ({len(input_id)}) does not match the length of target ({len(target)})")
-        #     for input_token, target_token in zip(input_id, target):
-        #         f.write(f"{input_token} | {tokenizer.decode([input_token])} => {target_token}\n")
-
         input_ids = torch.tensor([input_id], dtype=torch.long)
         targets = torch.tensor([target], dtype=torch.long)
         visual_token_indices_of_coordinates = torch.tensor([visual_token_indices_of_coordinates], dtype=torch.long) if len(visual_token_indices_of_coordinates) > 0 else [None]
@@ -547,12 +529,5 @@ class LazySupervisedDataset(Dataset):
         data_dict["coordinates"] = coordinates
         data_dict["visual_token_indices_of_coordinates"] = visual_token_indices_of_coordinates
         data_dict["multi_patch_labels"] = multi_patch_labels
-
-        # rank0_print(f"input_id: {data_dict['input_ids'].shape}, {data_dict['input_ids']}") # [1, 24576]
-        # rank0_print(f"labels: {data_dict['labels'].shape}, {data_dict['labels']}") # [1, 24576]
-        # rank0_print(f"coordinates: {data_dict['coordinates']}") # [[(x1, y1), (x2, y2)]]
-        # rank0_print(f"visual_token_indices_of_coordinates: {data_dict['visual_token_indices_of_coordinates']}") # [[idx1, idx2]]
-        # rank0_print(f"pixel_values: {data_dict['pixel_values'].shape}") # [n_image_tokens, 1176]
-        # rank0_print(f"image_grid_thw: {data_dict['image_grid_thw']}") # [[  1,  78, 138]]
         
         return data_dict
