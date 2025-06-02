@@ -1,20 +1,20 @@
 import torch
-from transformers import Qwen2VLProcessor
-from datasets import load_dataset
-from aguvis.modeling import Qwen2VLForConditionalGenerationWithPointer
-from aguvis.decoding_utils import ForceFollowTokensLogitsProcessor
-from aguvis.inference import inference, prepare_inputs
-from aguvis.utils import draw_bbox, draw_point, do_boxes_overlap
-from aguvis.constants import grounding_system_message, DEFAULT_POINTER_PAD_TOKEN, DEFAULT_POINTER_END_TOKEN
-
-from PIL import Image
 import os
 import json
-import math
-from tqdm import tqdm
 import argparse
 
-POINTER_ONLY = True # if True, will produce grounding feature based on pseudo assistant text output.
+from tqdm import tqdm
+from qwen_vl_utils import process_vision_info
+from datasets import load_dataset
+from transformers import Qwen2VLProcessor, LogitsProcessorList
+
+from gui_actor.constants import chat_template
+from gui_actor.modeling import Qwen2VLForConditionalGenerationWithPointer
+from gui_actor.inference import inference, ForceFollowTokensLogitsProcessor
+from gui_actor.utils import do_boxes_overlap
+from gui_actor.constants import DEFAULT_POINTER_PAD_TOKEN, DEFAULT_POINTER_END_TOKEN, grounding_system_message
+
+IMAGE_PATCH_SIZE =14
 
 def normalize_bbox(bbox_x1y1x2y2, img_width, img_height):
     # if bbox_x1y1x2y2 is not normalized to [0, 1], normalize it
@@ -28,7 +28,7 @@ def normalize_bbox(bbox_x1y1x2y2, img_width, img_height):
         y2 = y2 / img_height
         return x1, y1, x2, y2
 
-def evaluate(model_name_or_path):
+def evaluate(model_name_or_path, use_placeholder, topk):
     # initialize model
     data_processor = Qwen2VLProcessor.from_pretrained(model_name_or_path)
     tokenizer = data_processor.tokenizer
@@ -51,7 +51,6 @@ def evaluate(model_name_or_path):
     )
 
     dataset = load_dataset("HongxinLi/ScreenSpot_v2")["test"]
-
     domain_dict = {
             "windows": "desktop",
             "macos": "desktop",
@@ -65,17 +64,17 @@ def evaluate(model_name_or_path):
 
     results = []
     for i, example in tqdm(enumerate(dataset), total=len(dataset)):
-        pred = {
+        ele = {
             "file_name": example["file_name"],
             "data_type": example["data_type"],
             "domain": domain_dict[example["data_source"]],
             "instruction": example["instruction"],
             "img_size": example["image"].size,
             "bbox_x1y1x2y2": normalize_bbox(example["bbox"], example["image"].size[0], example["image"].size[1]),
-            "pred_points": [],
-            "pred_texts": [],
-            "is_correct": 0,
+            "hit_top1": 0,
+            "overlap_top1": 0,
             "hit_topk": 0,
+            "overlap_topk": 0,
         }
 
         conversation = [
@@ -84,7 +83,7 @@ def evaluate(model_name_or_path):
                 "content": [
                     {
                         "type": "text",
-                        "text": grounding_system_message
+                        "text": grounding_system_message,
                     }
                 ]
             },
@@ -93,7 +92,8 @@ def evaluate(model_name_or_path):
                 "content": [
                     {
                         "type": "image",
-                        "image": example["image"],
+                        "image": example["image"], # PIL.Image.Image or str to path
+                        # "image_url": "https://xxxxx.png" or "https://xxxxx.jpg" or "file://xxxxx.png" or "data:image/png;base64,xxxxxxxx", will be split by "base64,"
                     },
                     {
                         "type": "text",
@@ -103,36 +103,31 @@ def evaluate(model_name_or_path):
             },
         ]
 
-        assistant_message = "" if not POINTER_ONLY else "<|im_start|>assistant<|recipient|>os\npyautogui.click(<|pointer_start|><|pointer_pad|><|pointer_end|>)"
-        inputs = prepare_inputs(conversation, data_processor, assistant_message)
-        _, n_height, n_width = inputs["image_grid_thw"][0]
-        output_text, topk_points, topk_values, topk_points_all, attn_scores = inference(model, tokenizer, inputs, data_processor,
-                                            logits_processors=[logits_processor_pointer],
-                                            pointer_only=POINTER_ONLY,
-                                            topk=3,
-                                            verbose=False)
+        pred = inference(conversation, model, tokenizer, data_processor, logits_processor=logits_processor_pointer, use_placeholder=use_placeholder, topk=3)
+        topk_points = pred["topk_points"]
+        gt_bbox = ele["bbox_x1y1x2y2"]
 
-        pred["output_text"] = output_text
-        pred["topk_points"] = topk_points
-        pred["topk_values"] = topk_values
-        pred["topk_points_all"] = topk_points_all
-        pred["attn_scores"] = attn_scores
-        pred["n_width"] = n_width.item()
-        pred["n_height"] = n_height.item()
-            
+        # compute the metrics
         px, py = topk_points[0]
+        x1, y1, x2, y2 = gt_bbox
 
-        x1, y1, x2, y2 = pred["bbox_x1y1x2y2"]
         if (x1 <= px <= x2) and (y1 <= py <= y2):
-            pred["is_correct"] = 1
-            pred["hit_topk"] = 1
+            ele["hit_top1"] = 1
+            ele["hit_topk"] = 1
+
+        pred_bbox = [px - IMAGE_PATCH_SIZE, py - IMAGE_PATCH_SIZE, px + IMAGE_PATCH_SIZE, py + IMAGE_PATCH_SIZE]
+        if do_boxes_overlap(pred_bbox, gt_bbox):
+            ele["overlap_top1"] = 1
+            ele["overlap_topk"] = 1
 
         for px, py in topk_points[1:]:
             if (x1 <= px <= x2) and (y1 <= py <= y2):
-                pred["hit_topk"] = 1
-                break
+                ele["hit_topk"] = 1
+            pred_bbox = [px - IMAGE_PATCH_SIZE, py - IMAGE_PATCH_SIZE, px + IMAGE_PATCH_SIZE, py + IMAGE_PATCH_SIZE]
+            if do_boxes_overlap(pred_bbox, gt_bbox):
+                ele["overlap_topk"] = 1
 
-        results.append(pred)
+        results.append(ele)
     
     return results
 
@@ -146,20 +141,20 @@ def get_metric(list_of_examples,
     Each element in list_of_examples is a dict containing:
         - "domain": Domain name (e.g., "web", "mobile", "desktop")
         - "data_type": Data type (e.g., "text", "icon")
-        - "is_correct", "is_overlap", "hit_topk", "overlap_topk": binary (0 or 1)
+        - "hit_top1", "overlap_top1", "hit_topk", "overlap_topk": binary (0 or 1)
     
     The final table has columns for each domain broken down by UI type (plus a domain-average)
     and overall columns ("All-text", "All-icon", "All-average").
     
     The rows of the table are:
-        - is_correct
-        - is_overlap
+        - hit_top1
+        - overlap_top1
         - hit_topk
         - overlap_topk
     """
     
     # List of metric keys to compute.
-    metrics = ["is_correct", "is_overlap", "hit_topk", "overlap_topk"]
+    metrics = ["hit_top1", "overlap_top1", "hit_topk", "overlap_topk"]
 
     # Helper function to compute the mean of a given key from a list of examples.
     def compute_mean(examples, key):
@@ -247,16 +242,21 @@ def get_metric(list_of_examples,
     print(metric_info)
     return metric_info
 
-
+"""
+# cd to project root directory
+python eval/screenSpot_v2.py --save_path <path_to_save_results>
+"""
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model_name_or_path", type=str, default="/home/qianhuiwu/blob/qianhuiwu_checkpoints/aguvis_baseline/baseline_same_qwen2vl7binstruct_stage1_ep1_lr1e-05_bs1_mml8192_baseline_same_stage1_all_data_n8_new_6sets/checkpoint-12030")
-    parser.add_argument("--save_path", type=str, default=None)
+    parser.add_argument("--model_name_or_path", type=str, default="microsoft/GUI-Actor-2B-Qwen2-VL")
+    parser.add_argument("--save_path", type=str, default="./")
+    parser.add_argument('--no-placeholder', dest='use_placeholder', action='store_false', help='Disable the placeholder')
+    parser.add_argument('--topk', type=int, default=3, help='Topk')
+    parser.set_defaults(use_placeholder=True)
+
     args = parser.parse_args()
 
-    model_name_or_path = args.model_name_or_path
-    
-    save_path = f"{model_name_or_path}/final_eval" if args.save_path is None else args.save_path
+    save_path = args.save_path
     if not os.path.exists(save_path):
         os.makedirs(save_path, exist_ok=True)
     pred_path = f"{save_path}/screenspot_v2_all_preds.json"
@@ -270,8 +270,8 @@ if __name__ == "__main__":
         with open(pred_path, "r") as f:
             results = json.load(f)
     else:
-        print(f"Evaluating {model_name_or_path}...")
-        results = evaluate(model_name_or_path)
+        print(f"Evaluating {args.model_name_or_path}...")
+        results = evaluate(args.model_name_or_path, args.use_placeholder, args.topk)
         with open(pred_path, "w") as f:
             json.dump(results, f)
         print(f"Saved {len(results)} predictions to {pred_path}")
