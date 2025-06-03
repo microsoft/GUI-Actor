@@ -37,6 +37,7 @@
 <div align="center">
 <img src="assets/images/main_figure.png?raw=true" width="100%">
 </div>
+
 Figure 1. **Left**: Model performance vs. training data scale on the ScreenSpot-Pro benchmark. Higher and more left is better; larger points indicate models with more parameters. We only show GUI-Actor models built upon Qwen2-VL here for fair comparison. With Qwen2.5-VL as the backbone, GUI-Actor-3B/7B reaches scores up to 42.2/44.6 (without Verifier). **Right**: Illustration of action attention. GUI-Actor grounds target elements by attending to the most relevant visual regions.
 
 ## :sparkles: Highlights
@@ -64,7 +65,7 @@ We will be releasing all the following contents:
 - [ ] Demo
 
 ## :bar_chart: Main Results
-Table 1. Main results on the ScreenSpot-Pro benchmark with Qwen2-VL as the backbone. † indicates scores obtained from our own evaluation of the official models on Huggingface.
+Table 1. Main results on ScreenSpot-Pro, ScreenSpot, and ScreenSpot-v2 with **Qwen2-VL** as the backbone. † indicates scores obtained from our own evaluation of the official models on Huggingface.
 | Method           | Backbone VLM | ScreenSpot-Pro | ScreenSpot | ScreenSpot-v2 |
 |------------------|--------------|----------------|------------|----------------|
 | **_72B models:_**
@@ -84,7 +85,7 @@ Table 1. Main results on the ScreenSpot-Pro benchmark with Qwen2-VL as the backb
 | GUI-Actor-2B     | Qwen2-VL     | **36.7**       | **86.5**   | **88.6**       |
 | GUI-Actor-2B + Verifier     | Qwen2-VL    | 41.8       | 86.9       | 89.3           |
 
-Table 2. Main results on the ScreenSpot-Pro benchmark with Qwen2.5-VL as the backbone.
+Table 2. Main results on the ScreenSpot-Pro and ScreenSpot-v2 with **Qwen2.5-VL** as the backbone.
 | Method         | Backbone VLM | ScreenSpot-Pro | ScreenSpot-v2 |
 |----------------|---------------|----------------|----------------|
 | **_7B models:_**
