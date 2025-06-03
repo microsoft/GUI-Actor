@@ -1,9 +1,63 @@
 # GUI-Actor
 
-### Contributions
+<div align="center">
+<img src="assets/images/title.png?raw=true" width="100%">
+
+[Qianhui Wu](https://qianhuiwu.github.io/)<sup>1</sup><sup>*</sup>&nbsp;
+[Kanzhi Cheng](https://scholar.google.com/citations?user=S2IPVnwAAAAJ&hl=en&oi=ao/)<sup>2</sup><sup>*</sup>&nbsp;
+[Rui Yang](https://yangrui2015.github.io/)<sup>3</sup><sup>*</sup>&nbsp;
+[Chaoyun Zhang](https://vyokky.github.io/)<sup>1</sup>&nbsp;
+[Jianwei Yang](https://jwyang.github.io/)<sup>1</sup>&nbsp;
+[Huiqiang Jiang](https://hqjiang.com/)<sup>1</sup><br>
+[Jian Mu]()<sup>2</sup>&nbsp;
+[Baolin Peng](https://scholar.google.com/citations?user=u1CNjgwAAAAJ&hl=zh-CN)<sup>1</sup>&nbsp;
+[Bo Qiao](https://scholar.google.com/citations?user=_6ugrdYAAAAJ&hl=en)<sup>1</sup>&nbsp;
+[Reuben Tan](https://cs-people.bu.edu/rxtan/)<sup>1</sup>&nbsp;
+[Si Qin](https://sqin860.github.io/)<sup>1</sup>&nbsp;
+[Lars Liden](https://sites.google.com/site/larsliden)<sup>1</sup><br>
+[Qingwei Lin](https://scholar.google.com/citations?user=W9fdsxMAAAAJ&hl=zh-CN)<sup>1</sup>&nbsp;
+[Huan Zhang](https://huan-zhang.com/)<sup>3</sup>&nbsp;
+[Tong Zhang](https://tongzhang-ml.org/)<sup>3</sup>&nbsp;
+[Jianbing Zhang](https://cs.nju.edu.cn/zhangjb/index.htm)<sup>2</sup>&nbsp;
+[Dongmei Zhang](https://scholar.google.com/citations?user=jLlBBl4AAAAJ&hl=en)<sup>1</sup>&nbsp;
+[Jianfeng Gao](https://scholar.google.com/citations?user=CQ1cqKkAAAAJ&hl=en)<sup>1</sup><sup>†</sup> 
+
+<sup>1</sup> Microsoft Research&nbsp;<sup>2</sup> Nanjing University&nbsp;<sup>3</sup> University of Illinois Urbana-Champaign<br>
+<sup>*</sup> Equal Contribution&nbsp;<sup>†</sup>Leadership  
+
+<h4>
+<a href="https://www.arxiv.org/pdf/2502.13130">📄 arXiv Paper</a> &nbsp; 
+<a href="https://aka.ms/GUI-Actor/">🌐 Project Page</a> &nbsp; 
+<a href="https://huggingface.co/microsoft/GUI-Actor-7B-Qwen2-VL">🤗 Hugging Face Model</a>
+</h4>
+
+</div>
+
+<div align="center">
+<img src="assets/images/main_figure.png?raw=true" width="100%">
+</div>
+</div>
+
+## :sparkles: Highlights
+- 🤔 **We identify several limitations in coordinate-generation based methods (_i.e._, output screen positions as text tokens x=…, y=…) for GUI grounding, including (1) weak spatial-semantic alignment, (2) ambiguous supervision signals, and (3) granularity mismatch between vision and action space.**
+- 💡 **Rethink how humans interact with digital interfaces: humans do NOT calculate precise screen coordinates before acting—they perceive the target element and interact with it directly.**
+- 🚀 **We propose <span style="color:red">GUI-Actor</span>, a VLM enhanced by an action head, to mitigate the above limitations. The attention-based action head not only enables GUI-Actor to peform coordinate-free GUI grounding that more closely aligns with human behavior, but also can generate multiple candidate regions in a single forward pass, offering flexibility for downstream modules such as search strategies.**
+- ➕ **We design a _grounding verifier_ to evaluate and select the most plausible action region among the candidates proposed from the action attention map. We show that this verifier can be easily integrated with other grounding methods for a further performance boost.**
+- 🎯 **GUI-Actor achieves state-of-the-art performance on multiple GUI action grounding benchmarks with the same Qwen2-VL backbone, demonstrating its effectiveness and generalization to unseen screen resolutions and layouts. Notably,GUI-Actor-7B even surpasses UI-TARS-72B (38.1) on <span style="color:red">ScreenSpot-Pro</span>, achieving scores of <span style="color:red">40.7</span> with Qwen2-VL and <span style="color:red">44.6</span> with Qwen2.5-VL as backbones.**
+
+<!-- ## :fire: News
+* **[2025.06.03]**  We released the GUI-Actor training/inference code and model checkpoints!
+-->
+
+## :bookmark_tabs: Todos
+We will be releasing all the following contents:
+- [x] Model training and evaluation based on Qwen2-VL
+- [x] Model checkpoint
+- [ ] Support for Qwen2.5-VL
+- [ ] Processed training data
+- [ ] Demo
 
 ## Environment Setup
-
 ```bash
 conda create -n gui_actor python=3.10
 conda activate gui_actor
@@ -11,13 +65,7 @@ conda install pytorch torchvision torchaudio pytorch-cuda -c pytorch -c nvidia
 pip install -e .
 ```
 
-## TODOs
-- [x] Qwen2-VL based codes.
-- [] Support Qwen2.5-VL.
-- [] Processed training data
-- [] Evaluation Scripts
-
-# Acknowledgements
+## Acknowledgements
 
 This project is built upon the following projects. Thanks for their great work!
 - [Qwen2.5-VL](https://github.com/QwenLM/Qwen2.5-VL)
