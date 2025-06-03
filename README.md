@@ -3,7 +3,6 @@
 <div align="center">
 <img src="assets/images/title.png?raw=true" width="80%" style="margin-bottom: 10px;">
 <hr>
-<br>
 
 [Qianhui Wu](https://qianhuiwu.github.io/)<sup>*1</sup>&nbsp;
 [Kanzhi Cheng](https://scholar.google.com/citations?user=S2IPVnwAAAAJ&hl=en&oi=ao/)<sup>*2</sup>&nbsp;
@@ -38,7 +37,7 @@
 <div align="center">
 <img src="assets/images/main_figure.png?raw=true" width="100%">
 </div>
-Figure 1. Left: Model performance vs. training data scale on the ScreenSpot-Pro benchmark. Higher and more left is better; larger points indicate models with more parameters. We only show GUI-Actor models built upon Qwen2-VL here for fair comparison. With Qwen2.5-VL as the backbone, GUI-Actor-3B/7B reaches scores up to 42.2/44.6 (without Verifier). Right: Illustration of action attention. GUI-Actor grounds target elements by attending to the most relevant visual regions.
+Figure 1. **Left**: Model performance vs. training data scale on the ScreenSpot-Pro benchmark. Higher and more left is better; larger points indicate models with more parameters. We only show GUI-Actor models built upon Qwen2-VL here for fair comparison. With Qwen2.5-VL as the backbone, GUI-Actor-3B/7B reaches scores up to 42.2/44.6 (without Verifier). **Right**: Illustration of action attention. GUI-Actor grounds target elements by attending to the most relevant visual regions.
 
 ## :sparkles: Highlights
 🤔 **We identify several limitations in coordinate-generation based methods** (_i.e._, output screen positions as text tokens x=…, y=…) for GUI grounding, including (1) weak spatial-semantic alignment, (2) ambiguous supervision signals, and (3) granularity mismatch between vision and action space.
@@ -72,7 +71,7 @@ Table 1. Main results on the ScreenSpot-Pro benchmark with Qwen2-VL as the backb
 | UGround-V1-72B   | Qwen2-VL     | 34.5           | **89.4**   | -              |
 | UI-TARS-72B      | Qwen2-VL     | **38.1**       | 88.4       | **90.3**       |
 | **_7B models:_**
-| OS-Atlas-7B      |              | 18.9           | 82.5       | 84.1           |
+| OS-Atlas-7B      | Qwen2-VL     | 18.9           | 82.5       | 84.1           |
 | AGUVIS-7B        | Qwen2-VL     | 22.9           | 84.4       | 86.0†          |
 | UGround-V1-7B    | Qwen2-VL     | 31.1           | 86.3       | 87.6†          |
 | UI-TARS-7B       | Qwen2-VL     | 35.7           | **89.5**   | **91.6**       |
@@ -86,13 +85,13 @@ Table 2. Main results on the ScreenSpot-Pro benchmark with Qwen2.5-VL as the bac
 | Method         | Backbone VLM | ScreenSpot-Pro | ScreenSpot-v2 |
 |----------------|---------------|----------------|----------------|
 | **_7B models:_**
-| Qwen2.5-VL-7B  | Qwen2.5-VL    | 27.6           | 80.9           |
-| Jedi-7B        | Qwen2.5-VL    | 36.1           | 88.6           |
-| GUI-Actor-7B   | Qwen2.5-VL    | **42.2**       | **91.0**       |
+| Qwen2.5-VL-7B  | Qwen2.5-VL    | 27.6           | 88.8           |
+| Jedi-7B        | Qwen2.5-VL    | 39.5           | 91.7           |
+| GUI-Actor-7B   | Qwen2.5-VL    | **44.6**       | **92.1**       |
 | **_3B models:_**
-| Qwen2.5-VL-3B  | Qwen2.5-VL    | 25.9           | 88.8           |
-| Jedi-3B        | Qwen2.5-VL    | 39.5           | 91.7           |
-| GUI-Actor-3B   | Qwen2.5-VL    | **44.6**       | **92.1**       |
+| Qwen2.5-VL-3B  | Qwen2.5-VL    | 25.9           | 80.9           |
+| Jedi-3B        | Qwen2.5-VL    | 36.1           | 88.6           |
+| GUI-Actor-3B   | Qwen2.5-VL    | **42.2**       | **91.0**       |
 
 ## :rescue_worker_helmet: Installation
 1. Clone this repo to your local machine:
@@ -108,7 +107,7 @@ conda install pytorch torchvision torchaudio pytorch-cuda -c pytorch -c nvidia
 pip install -e .
 ```
 ## :minidisc: Data Preparation
-1. Download the processed data from [here](https://huggingface.co/datasets/microsoft/GUI-Actor-Data).
+1. Download the processed data from [here (coming soon)]().
 2. Modify the paths in the [data_config.yaml](./data/data_config.yaml) file to point to the downloaded data.
 
 ## :building_construction: Model Training
