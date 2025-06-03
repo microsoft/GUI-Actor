@@ -60,88 +60,54 @@ class ForceFollowTokensLogitsProcessor(LogitsProcessor):
         return scores
 
 
-def get_prediction_region_point(attn_scores, n_width, n_height, top_n=30, return_all_regions=True, rect_center=False):
+def get_prediction_region_point(attn_scores, n_width, n_height, top_n=30, activation_threshold=0.3, return_all_regions=True, rect_center=False):
     """
-    1. 选出激活的patch（实现了不同的选择方法）
-    2. 将连通的patches划分为不同区域
-    3. 计算每个区域的平均激活值
-    4. 选择平均激活值最高的区域
-    5. 返回该区域的中心点作为最终预测点
+    1. Select activated patches
+    2. Divide connected patches into different regions
+    3. Calculate the average activation value for each region
+    4. Select the region with the highest average activation value
+    5. Return the center point of that region as the final prediction point
     """
 
-    # # 方式3: 从中取累计概率达到某个阈值的patch，类似于核采样
-    # # 对所有patch按激活值从高到低排序
-    # prob_threshold = 0.50
-    # sorted_values, sorted_indices = torch.sort(attn_scores[0], descending=True)
-    # # 计算归一化的累积概率
-    # total_value = torch.sum(attn_scores[0])
-    # cumsum = torch.cumsum(sorted_values, dim=0)
-    # cumprob = cumsum / total_value
-    # # 找到累计概率达到阈值的位置
-    # # 注意：最小取1个，最大取top_n个
-    # n_indices = 1  # 至少取一个
-    # for i, prob in enumerate(cumprob):
-    #     if prob >= prob_threshold:
-    #         n_indices = i + 1
-    #         break
-    # # n_indices = min(n_indices, top_n)  # 不超过top_n
-    # # 取出满足条件的indices和values
-    # topk_indices = sorted_indices[:n_indices]
-    # topk_values = sorted_values[:n_indices]
-
-    # 方式2: 激活值大于最大激活值的一定比例的patch
-    # 获取最高激活值和阈值
+    # Get patches with activation values greater than a certain proportion of the maximum activation value as activated patches
+    # Get the highest activation value and threshold
     max_score = attn_scores[0].max().item()
-    threshold = max_score * 0.3
-    # 选择所有超过阈值的patch
+    threshold = max_score * activation_threshold
+    # Select all patches above the threshold
     mask = attn_scores[0] > threshold
     valid_indices = torch.nonzero(mask).squeeze(-1)
-    # 如果超过阈值的patch数量多于top_n，则只保留前top_n个
-    # if len(valid_indices) > top_n:
-    #     # 获取这些激活值并排序
-    #     valid_scores = attn_scores[0][valid_indices]
-    #     _, sorted_idx = torch.sort(valid_scores, descending=True)
-    #     valid_indices = valid_indices[sorted_idx[:top_n]]
-    #     topk_values = valid_scores[sorted_idx[:top_n]]
-    #     topk_indices = valid_indices
-    # else:
-    # 否则使用所有超过阈值的patch
     topk_values = attn_scores[0][valid_indices]
     topk_indices = valid_indices
-
-    # # 方式1: 固定取top N个indices及其scores
-    # topk_values, topk_indices = attn_scores[0].topk(top_n, dim=-1)
     
-    # 将indices转换为2D坐标
+    # Convert indices to 2D coordinates
     topk_coords = []
     for idx in topk_indices.tolist():
         y = idx // n_width
         x = idx % n_width
         topk_coords.append((y, x, idx))
     
-    # 划分连通区域
+    # Divide into connected regions
     regions = []
     visited = set()
-    
     for i, (y, x, idx) in enumerate(topk_coords):
         if idx in visited:
             continue
             
-        # 开始一个新区域
+        # Start a new region
         region = [(y, x, idx, topk_values[i].item())]
         visited.add(idx)
         queue = [(y, x, idx, topk_values[i].item())]
         
-        # BFS查找连通点
+        # BFS to find connected points
         while queue:
             cy, cx, c_idx, c_val = queue.pop(0)
             
-            # 检查相邻的4个方向
+            # Check 4 adjacent directions
             for dy, dx in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
                 ny, nx = cy + dy, cx + dx
                 n_idx = ny * n_width + nx
                 
-                # 检查这个相邻点是否在topk列表中
+                # Check if this adjacent point is in the topk list
                 for j, (ty, tx, t_idx) in enumerate(topk_coords):
                     if ty == ny and tx == nx and t_idx not in visited:
                         visited.add(t_idx)
@@ -150,24 +116,24 @@ def get_prediction_region_point(attn_scores, n_width, n_height, top_n=30, return
         
         regions.append(region)
     
-    # 计算每个区域的平均激活值
+    # Calculate the average activation value for each region
     region_scores = []
     region_centers = []
     region_points = []
     
     for region in regions:
-        # 计算区域平均分数
+        # Calculate average score for the region
         avg_score = sum(item[3] for item in region) / len(region)
         region_scores.append(avg_score)
 
-        # 计算每个patch的归一化中心坐标，然后再取平均
+        # Calculate normalized center coordinates for each patch, then take the average
         normalized_centers = []
         weights = []
         y_coords = set()
         x_coords = set()
 
         for y, x, _, score in region:
-            # 每个patch的中心点归一化坐标
+            # Normalized coordinates of the center point for each patch
             center_y = (y + 0.5) / n_height
             center_x = (x + 0.5) / n_width
             normalized_centers.append((center_x, center_y))
@@ -178,14 +144,14 @@ def get_prediction_region_point(attn_scores, n_width, n_height, top_n=30, return
 
         region_points.append(normalized_centers)
 
-        # 计算归一化坐标的平均值作为区域中心
+        # Calculate the average of normalized coordinates as the region center
         if not rect_center:
-            # 加权平均
+            # Weighted average
             total_weight = sum(weights)
             weighted_x = sum(nc[0] * w for nc, w in zip(normalized_centers, weights)) / total_weight
             weighted_y = sum(nc[1] * w for nc, w in zip(normalized_centers, weights)) / total_weight
             avg_center_x, avg_center_y = weighted_x, weighted_y
-            # # 直接平均
+            # # Simple average
             # avg_center_x = sum(nc[0] for nc in normalized_centers) / len(normalized_centers)
             # avg_center_y = sum(nc[1] for nc in normalized_centers) / len(normalized_centers)
         else:
@@ -193,7 +159,7 @@ def get_prediction_region_point(attn_scores, n_width, n_height, top_n=30, return
             avg_center_y = sum(y_coords) / len(y_coords)
         region_centers.append((avg_center_x, avg_center_y))
         
-    # 选择平均激活值最高的区域
+    # Select the region with the highest average activation value
     sorted_indices = sorted(range(len(region_scores)), key=lambda i: region_scores[i], reverse=True)
     sorted_scores = [region_scores[i] for i in sorted_indices]
     sorted_centers = [region_centers[i] for i in sorted_indices]
@@ -201,6 +167,11 @@ def get_prediction_region_point(attn_scores, n_width, n_height, top_n=30, return
     best_point = sorted_centers[0]
 
     if return_all_regions:
+        # Outputs:
+        # 1. best_point: the center point of the region with the highest average activation value
+        # 2. sorted_centers: the center points of all regions, sorted by the average activation value in descending order
+        # 3. sorted_scores: the average activation values of all regions, sorted in descending order
+        # 4. sorted_points: the normalized center coordinates of all patches, sorted by the average activation value in descending order
         return best_point, sorted_centers, sorted_scores, sorted_points
     else:
         return best_point
