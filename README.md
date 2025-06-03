@@ -77,7 +77,7 @@ Table 1. Main results on the ScreenSpot-Pro benchmark with Qwen2-VL as the backb
 | UGround-V1-7B    | Qwen2-VL     | 31.1           | 86.3       | 87.6†          |
 | UI-TARS-7B       | Qwen2-VL     | 35.7           | **89.5**   | **91.6**       |
 | GUI-Actor-7B     | Qwen2-VL     | **40.7**       | 88.3       | 89.5           |
-| GUI-Actor-7B + Verifier     | Qwen2-VL    | **44.2**       | 89.7       | 90.9           |
+| GUI-Actor-7B + Verifier     | Qwen2-VL    | 44.2       | 89.7       | 90.9           |
 | **_2B models:_**
 | UGround-V1-2B    | Qwen2-VL     | 26.6           | 77.1       | -              |
 | UI-TARS-2B       | Qwen2-VL     | 27.7           | 82.3       | 84.7           |
@@ -91,12 +91,12 @@ Table 2. Main results on the ScreenSpot-Pro benchmark with Qwen2.5-VL as the bac
 | Qwen2.5-VL-7B  | Qwen2.5-VL    | 27.6           | 88.8           |
 | Jedi-7B        | Qwen2.5-VL    | 39.5           | 91.7           |
 | GUI-Actor-7B   | Qwen2.5-VL    | **44.6**       | **92.1**       |
-| GUI-Actor-7B + Verifier   | Qwen2.5-VL    | **47.7**       | **92.5**       |
+| GUI-Actor-7B + Verifier   | Qwen2.5-VL    | 47.7       | 92.5       |
 | **_3B models:_**
 | Qwen2.5-VL-3B  | Qwen2.5-VL    | 25.9           | 80.9           |
 | Jedi-3B        | Qwen2.5-VL    | 36.1           | 88.6           |
 | GUI-Actor-3B   | Qwen2.5-VL    | **42.2**       | **91.0**       |
-| GUI-Actor-3B + Verifier   | Qwen2.5-VL    | **45.9**       | **92.4**       |
+| GUI-Actor-3B + Verifier   | Qwen2.5-VL    | 45.9       | 92.4       |
 
 ## :rescue_worker_helmet: Installation
 1. Clone this repo to your local machine:
