@@ -16,9 +16,9 @@ from torch.utils.data import Dataset
 from gui_actor.constants import (
     IGNORE_INDEX,
     DEFAULT_IMAGE_TOKEN,
-    DEFAULT_POINTER_START_TOKEN,
-    DEFAULT_POINTER_PAD_TOKEN,
-    DEFAULT_POINTER_END_TOKEN,
+    DEFAULT_ACTOR_START_TOKEN,
+    DEFAULT_ACTOR_PAD_TOKEN,
+    DEFAULT_ACTOR_END_TOKEN,
     ACTION_PATTENS_XY,
     ADDITIONAL_SPECIAL_TOKENS,
     assistant_template,
@@ -51,9 +51,9 @@ def reformat_coordinates(text):
         for match in matches:
             all_matches.append((match.start(), match.groups()))
         if pattern == ACTION_PATTENS_XY[0]:
-            target_text = f"{DEFAULT_POINTER_START_TOKEN}{DEFAULT_POINTER_PAD_TOKEN}{DEFAULT_POINTER_END_TOKEN}"
+            target_text = f"{DEFAULT_ACTOR_START_TOKEN}{DEFAULT_ACTOR_PAD_TOKEN}{DEFAULT_ACTOR_END_TOKEN}"
         else:
-            target_text = f"{DEFAULT_POINTER_START_TOKEN}{DEFAULT_POINTER_PAD_TOKEN}{DEFAULT_POINTER_END_TOKEN}, {DEFAULT_POINTER_START_TOKEN}{DEFAULT_POINTER_PAD_TOKEN}{DEFAULT_POINTER_END_TOKEN}"
+            target_text = f"{DEFAULT_ACTOR_START_TOKEN}{DEFAULT_ACTOR_PAD_TOKEN}{DEFAULT_ACTOR_END_TOKEN}, {DEFAULT_ACTOR_START_TOKEN}{DEFAULT_ACTOR_PAD_TOKEN}{DEFAULT_ACTOR_END_TOKEN}"
         text = re.sub(
             pattern,
             target_text,
@@ -176,9 +176,9 @@ class LazySupervisedDataset(Dataset):
         self.processor = processor
         self.list_data_dict = []
         self.list_image_path = []
-        self.pointer_pad_token_id = tokenizer.encode(DEFAULT_POINTER_PAD_TOKEN)[0]
-        self.pointer_start_token_id = tokenizer.encode(DEFAULT_POINTER_START_TOKEN)[0]
-        self.pointer_end_token_id = tokenizer.encode(DEFAULT_POINTER_END_TOKEN)[0]
+        self.actor_pad_token_id = tokenizer.encode(DEFAULT_ACTOR_PAD_TOKEN)[0]
+        self.actor_start_token_id = tokenizer.encode(DEFAULT_ACTOR_START_TOKEN)[0]
+        self.actor_end_token_id = tokenizer.encode(DEFAULT_ACTOR_END_TOKEN)[0]
 
         # Handle multiple JSON files specified in the data_path
         if "{" in data_path and "}" in data_path:
@@ -501,8 +501,8 @@ class LazySupervisedDataset(Dataset):
 
         assert len(input_id) == len(target), f"{len(input_id)} != {len(target)}"
 
-        # make the labels of all pointer_end_token_id to be IGNORE_INDEX
-        target = [IGNORE_INDEX if token == self.pointer_end_token_id else token for token in target]
+        # make the labels of all actor_end_token_id to be IGNORE_INDEX
+        target = [IGNORE_INDEX if token == self.actor_end_token_id else token for token in target]
 
         input_ids = torch.tensor([input_id], dtype=torch.long)
         targets = torch.tensor([target], dtype=torch.long)

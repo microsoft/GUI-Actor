@@ -11,18 +11,18 @@ from transformers import (
     AutoTokenizer
 )
 from gui_actor.constants import (
-    DEFAULT_POINTER_END_TOKEN,
-    DEFAULT_POINTER_PAD_TOKEN,
+    DEFAULT_ACTOR_END_TOKEN,
+    DEFAULT_ACTOR_PAD_TOKEN,
     chat_template
 )
 
 class ForceFollowTokensLogitsProcessor(LogitsProcessor):
     """
-    Forces tokens B (pointer_pad_token) and C (pointer_end_token) to follow token A (pointer_start_token).
+    Forces tokens B (actor_pad_token) and C (actor_end_token) to follow token A (actor_start_token).
     Whenever token_a_id is generated, enqueue the forced_sequence (e.g. [B, C]).
     As long as forced tokens remain in the queue, force them in the output.
     """
-    def __init__(self, token_a_id, forced_sequence=[DEFAULT_POINTER_PAD_TOKEN, DEFAULT_POINTER_END_TOKEN]):
+    def __init__(self, token_a_id, forced_sequence=[DEFAULT_ACTOR_PAD_TOKEN, DEFAULT_ACTOR_END_TOKEN]):
         super().__init__()
         self.token_a_id = token_a_id
         self.forced_sequence = forced_sequence  # list of token IDs, e.g. [B_id, C_id]
@@ -58,50 +58,6 @@ class ForceFollowTokensLogitsProcessor(LogitsProcessor):
         
         # Otherwise, return scores unmodified
         return scores
-
-
-def prepare_inputs(messages, data_processor, assistant_message=""):
-    """
-        example = [
-        {
-            "role": "system",
-            "content": [
-                {
-                    "type": "text",
-                    "text": grounding_system_message
-                }
-            ]
-        },
-            "role": "user",
-            "content": [
-                {
-                    "type": "image",
-                    "image": image_path
-                    # "image_url": "https://xxxxx.png" or "https://xxxxx.jpg" or "file://xxxxx.png" or "data:image/png;base64,xxxxxxxx", will be split by "base64,"
-                },
-                {
-                    "type": "text",
-                    "text": instruction
-                },
-            ],
-        },
-        ]
-    """
-    text = data_processor.apply_chat_template(messages,
-                                              tokenize=False,
-                                              add_generation_prompt=False,
-                                              chat_template=chat_template)
-    if assistant_message is not None:
-        text += assistant_message
-
-    image_inputs, video_inputs = process_vision_info(messages)
-    inputs = data_processor(text=[text],
-                            images=image_inputs,
-                            videos=video_inputs,
-                            padding=True,
-                            return_tensors="pt")
-
-    return inputs
 
 
 def get_prediction_region_point(attn_scores, n_width, n_height, top_n=30, return_all_regions=True, rect_center=False):
@@ -250,74 +206,122 @@ def get_prediction_region_point(attn_scores, n_width, n_height, top_n=30, return
         return best_point
 
 
-def inference(model, tokenizer, inputs, data_processor, logits_processors: list[LogitsProcessor] = None, pointer_only=False, topk=5, verbose=False):
+def inference(conversation, model, tokenizer, data_processor, logits_processor=None, use_placeholder=False, topk=5):
+    """
+    conversation = [
+        {
+            "role": "system",
+            "content": [
+                {
+                    "type": "text",
+                    "text": grounding_system_message,
+                }
+            ]
+        },
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "image",
+                    "image": example["image"], # PIL.Image.Image or str to path
+                    # "image_url": "https://xxxxx.png" or "https://xxxxx.jpg" or "file://xxxxx.png" or "data:image/png;base64,xxxxxxxx", will be split by "base64,"
+                },
+                {
+                    "type": "text",
+                    "text": example["instruction"]
+                },
+            ],
+        },
+    ]
+    """
+    if logits_processor is None:
+        logits_processor = ForceFollowTokensLogitsProcessor(
+            token_a_id=tokenizer.encode(DEFAULT_ACTOR_PAD_TOKEN)[0],
+            forced_sequence=[
+                tokenizer.encode(DEFAULT_ACTOR_END_TOKEN)[0]
+            ]
+        )
+    
+    assiatant_starter = "" if not use_placeholder else "<|im_start|>assistant<|recipient|>os\npyautogui.click(<|actor_start|><|actor_pad|><|actor_end|>)"
+
+    pred = {
+        "output_text": None, # generated text
+        "n_width": None, # number of patch_tokens in width dimension
+        "n_height": None, # number of patch_tokens in height dimension
+        "attn_scores": None, # attention scores over the image patches
+        "topk_points": None, # topk points
+        "topk_values": None, # topk values
+        "topk_points_all": None, # all points
+    }
+
+    # prepare text
+    text = data_processor.apply_chat_template(conversation,
+                                            tokenize=False,
+                                            add_generation_prompt=False,
+                                            chat_template=chat_template
+                                            )
+    text += assiatant_starter
+
+    # prepare inputs
+    image_inputs, video_inputs = process_vision_info(conversation)
+    inputs = data_processor(text=[text],
+                            images=image_inputs,
+                            videos=video_inputs,
+                            padding=True,
+                            return_tensors="pt"
+                            )
     inputs = inputs.to(model.device)
 
+    # generate
     results = model.generate(**inputs,
-                            max_new_tokens=2048 if not pointer_only else 1,
-                            logits_processor=LogitsProcessorList(logits_processors) if logits_processors else None,
+                            max_new_tokens=2048 if not use_placeholder else 1,
+                            logits_processor=LogitsProcessorList([logits_processor]),
                             return_dict_in_generate=True,
-                            output_hidden_states=True,)
+                            output_hidden_states=True
+                            )
+
 
     # decode the generated ids
     input_ids = inputs["input_ids"][0]
     generated_ids = results.sequences[0][len(input_ids):]
-    input_text = tokenizer.decode(input_ids, skip_special_tokens=False, clean_up_tokenization_spaces=False)
-    n_image_pad_tokens = input_text.count(data_processor.image_token)
-    input_text = input_text.replace(data_processor.image_token * n_image_pad_tokens, f"{data_processor.image_token}x{n_image_pad_tokens}")
     output_text = tokenizer.decode(generated_ids, skip_special_tokens=False, clean_up_tokenization_spaces=False)
-    
-    if verbose:
-        print(f"==> input_text: {input_text}")
-        print(f"==> inputs.image_grid_thw: {inputs.image_grid_thw}")
-        print(f"==> inputs.pixel_values.shape: {inputs.pixel_values.shape}")
-        print(f"==> generated_text: {output_text}")
+    pred["output_text"] = output_text
 
-    # get the hidden states of the "input"/"generated" (pointer_only=True/False) pointer_pad_token_id as decoder vectors
-    if not pointer_only:
+    # check if there are <ACTOR_TOKEN> is inside the input_ids or generated_ids
+    if use_placeholder:
+        actor_pad_mask = (inputs["input_ids"][0] == model.config.actor_pad_token_id) # n_all_input_tokens
+    else:
+        actor_pad_mask = (generated_ids[:-1] == model.config.actor_pad_token_id) # seq_len_generated_ids-1
+
+    # if there are no <ACTOR_TOKEN> in the input_ids or generated_ids, return the pred
+    if len(actor_pad_mask) == 0:
+        return pred
+    
+    # otherwise, get the coordinate from the action head
+    if use_placeholder:
+        decoder_hidden_states = results.hidden_states[0][-1][0] # n_all_input_tokens, hidden_size
+    else:
         decoder_hidden_states = [step_hidden_states[-1][0] for step_hidden_states in results.hidden_states[1:]]
         decoder_hidden_states = torch.cat(decoder_hidden_states, dim=0) # seq_len_generated_ids-1, hidden_size
-        pointer_pad_mask = (generated_ids[:-1] == model.config.pointer_pad_token_id) # seq_len_generated_ids-1
-    else:
-        decoder_hidden_states = results.hidden_states[0][-1][0] # n_all_input_tokens, hidden_size
-        pointer_pad_mask = (inputs["input_ids"][0] == model.config.pointer_pad_token_id) # n_all_input_tokens
-    decoder_hidden_states = decoder_hidden_states[pointer_pad_mask] # n_pointer_pad_tokens, hidden_size
-
-    if len(decoder_hidden_states) == 0:
-        if verbose:
-            print("No pointer pad token found in the generated ids")
-        return output_text, None, None
+    decoder_hidden_states = decoder_hidden_states[actor_pad_mask] # n_actor_pad_tokens, hidden_size
 
     # get the image embeddings as encoder vectors
     image_embeds = model.visual(inputs["pixel_values"], grid_thw=inputs["image_grid_thw"]) # n_image_tokens, hidden_size
 
-    # attn_scores, _ = model.pointer_head(image_embeds, decoder_hidden_states)
-    attn_scores, _ = model.multi_patch_pointer_head(image_embeds, decoder_hidden_states)
+    attn_scores, _ = model.multi_patch_action_head(image_embeds, decoder_hidden_states)
+    pred["attn_scores"] = attn_scores.tolist()
 
-    topk_points, topk_values, topk_points_all = None, None, None
-
-    # # 方式1: 返回概率最大的point
-    # topk_values, topk_indices = attn_scores[0].topk(topk, dim=-1)
-    # # convert image_embed indices to coordinates
-    # topk_points = []
-    # _, n_height, n_width = (inputs["image_grid_thw"][0] // model.visual.spatial_merge_size).tolist()
-    # for idx in topk_indices.tolist():
-    #     # point_x = (idx % n_width) / n_width
-    #     # point_y = (idx // n_width) / n_height
-    #     point_x = (idx % n_width + 0.5) / n_width
-    #     point_y = (idx // n_width + 0.5) / n_height
-    #     topk_points.append((point_x, point_y))
-    # topk_values = topk_values.tolist()
-
-    # 方式2: 按照region划分返回概率最大的point
     _, n_height, n_width = (inputs["image_grid_thw"][0] // model.visual.spatial_merge_size).tolist()
+    pred["n_width"] = n_width
+    pred["n_height"] = n_height
+
+    # get the topk points according to the attention scores
     best_point, region_points, region_scores, region_points_all = get_prediction_region_point(attn_scores, n_width, n_height, return_all_regions=True, rect_center=False)
     topk_points = region_points[:topk] if len(region_points) > topk else region_points
     topk_values = region_scores[:topk] if len(region_scores) > topk else region_scores
     topk_points_all = region_points_all[:topk] if len(region_points_all) > topk else region_points_all
+    pred["topk_points"] = topk_points
+    pred["topk_values"] = topk_values
+    pred["topk_points_all"] = topk_points_all
 
-    if verbose:
-        for v, p in zip(topk_values, topk_points):
-            print(f"{v:.4f} {p}")
-
-    return output_text, topk_points, topk_values, topk_points_all, attn_scores.tolist()
+    return pred

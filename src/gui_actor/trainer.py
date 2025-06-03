@@ -278,7 +278,7 @@ class AGUVISTrainer(Trainer):
 
             new_parameters = []
             for name, param in opt_model.named_parameters():
-                if ("pointer_head" in name) or ("embed_tokens" in name):
+                if ("action_head" in name) or ("embed_tokens" in name):
                     new_parameters.append(name)
             rank0_print(f"new_parameters: {len(new_parameters)}")
             

@@ -244,5 +244,6 @@ pyrightconfig.json
 
 wandb/
 results/*
-data/train/*
-data/images/*
+data/data_config_test.yaml
+checkpoints
+eval/inference.ipynb

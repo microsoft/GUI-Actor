@@ -8,9 +8,9 @@ LOGDIR = "."
 # Model Constants
 IGNORE_INDEX = -100
 DEFAULT_IMAGE_TOKEN = "<image>"
-DEFAULT_POINTER_START_TOKEN = "<|pointer_start|>"
-DEFAULT_POINTER_END_TOKEN = "<|pointer_end|>"
-DEFAULT_POINTER_PAD_TOKEN = "<|pointer_pad|>"
+DEFAULT_ACTOR_START_TOKEN = "<|actor_start|>"
+DEFAULT_ACTOR_END_TOKEN = "<|actor_end|>"
+DEFAULT_ACTOR_PAD_TOKEN = "<|actor_pad|>"
 
 # UNMASK_TOKEN_IDS = [198, 151644, 151645]
 
@@ -26,9 +26,9 @@ assistant_template = "{% for message in messages %}{{'<|im_start|>' + message['r
 ADDITIONAL_SPECIAL_TOKENS = [
     "<|recipient|>",
     "<|diff_marker|>",
-    DEFAULT_POINTER_START_TOKEN,
-    DEFAULT_POINTER_END_TOKEN,
-    DEFAULT_POINTER_PAD_TOKEN,
+    DEFAULT_ACTOR_START_TOKEN,
+    DEFAULT_ACTOR_END_TOKEN,
+    DEFAULT_ACTOR_PAD_TOKEN,
 ]
 
 # Action Patterns to be replaced with special tokens
