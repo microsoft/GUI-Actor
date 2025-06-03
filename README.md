@@ -1,7 +1,9 @@
 <!-- # GUI-Actor -->
 
 <div align="center">
-<img src="assets/images/title.png?raw=true" width="80%" style="margin-bottom: 40px;">
+<img src="assets/images/title.png?raw=true" width="80%" style="margin-bottom: 10px;">
+<hr>
+<br>
 
 [Qianhui Wu](https://qianhuiwu.github.io/)<sup>*1</sup>&nbsp;
 [Kanzhi Cheng](https://scholar.google.com/citations?user=S2IPVnwAAAAJ&hl=en&oi=ao/)<sup>*2</sup>&nbsp;
@@ -107,7 +109,7 @@ pip install -e .
 ```
 ## :minidisc: Data Preparation
 1. Download the processed data from [here](https://huggingface.co/datasets/microsoft/GUI-Actor-Data).
-2. Modify the paths in the [data_config.py](./data/data_config.yaml) file to point to the downloaded data.
+2. Modify the paths in the [data_config.yaml](./data/data_config.yaml) file to point to the downloaded data.
 
 ## :building_construction: Model Training
 1. Warmup stage:
@@ -119,7 +121,7 @@ bash scripts/warmup.sh
 bash scripts/train.sh
 ```
 
-## :memo: Evaluation on GUI Grounding Benchmarks
+## :checkered_flag: Evaluation on GUI Grounding Benchmarks
 For evaluation on ScreenSpot and ScreenSpot-v2, you can directly run the scripts under the `scripts/` folder like `python eval/screenSpot.py` or `python eval/screenSpot_v2.py`.
 
 For evaluation on ScreenSpot-Pro, you first need to download the data from [here](https://huggingface.co/datasets/likaixin/ScreenSpot-Pro), then run the following command:
@@ -130,10 +132,17 @@ python eval/screenSpot_pro.py --save_path <path_to_save_results> --data_path <pa
 ## :+1: Acknowledgements
 
 This project is built upon the following projects. Thanks for their great work!
+- [Transformers](https://github.com/huggingface/transformers)
 - [Qwen2.5-VL](https://github.com/QwenLM/Qwen2.5-VL)
 - [AGUVIS](https://github.com/xlang-ai/aguvis)
 
-## :checkered_flag: Citation
+We also thank the authors of the following projects for their insightful work, as well as for providing datasets and engaging in valuable discussions.
+- [AGUVIS](https://github.com/xlang-ai/aguvis)
+- [UGround](https://github.com/OSU-NLP-Group/UGround)
+- [OS-Atlas](https://github.com/OS-Copilot/OS-Atlas)
+- [SeeClick](https://github.com/njucckevin/SeeClick)
+
+## :memo: Citation
 If you find this work useful in your research, please consider citing:
 ```bibtex
 @article{wu2025guiactor,
