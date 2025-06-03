@@ -11,18 +11,18 @@ from transformers import (
     AutoTokenizer
 )
 from gui_actor.constants import (
-    DEFAULT_ACTOR_END_TOKEN,
-    DEFAULT_ACTOR_PAD_TOKEN,
+    DEFAULT_POINTER_END_TOKEN,
+    DEFAULT_POINTER_PAD_TOKEN,
     chat_template
 )
 
 class ForceFollowTokensLogitsProcessor(LogitsProcessor):
     """
-    Forces tokens B (actor_pad_token) and C (actor_end_token) to follow token A (actor_start_token).
+    Forces tokens B (pointer_pad_token) and C (pointer_end_token) to follow token A (pointer_start_token).
     Whenever token_a_id is generated, enqueue the forced_sequence (e.g. [B, C]).
     As long as forced tokens remain in the queue, force them in the output.
     """
-    def __init__(self, token_a_id, forced_sequence=[DEFAULT_ACTOR_PAD_TOKEN, DEFAULT_ACTOR_END_TOKEN]):
+    def __init__(self, token_a_id, forced_sequence=[DEFAULT_POINTER_PAD_TOKEN, DEFAULT_POINTER_END_TOKEN]):
         super().__init__()
         self.token_a_id = token_a_id
         self.forced_sequence = forced_sequence  # list of token IDs, e.g. [B_id, C_id]
@@ -207,13 +207,13 @@ def inference(conversation, model, tokenizer, data_processor, logits_processor=N
     """
     if logits_processor is None:
         logits_processor = ForceFollowTokensLogitsProcessor(
-            token_a_id=tokenizer.encode(DEFAULT_ACTOR_PAD_TOKEN)[0],
+            token_a_id=tokenizer.encode(DEFAULT_POINTER_PAD_TOKEN)[0],
             forced_sequence=[
-                tokenizer.encode(DEFAULT_ACTOR_END_TOKEN)[0]
+                tokenizer.encode(DEFAULT_POINTER_END_TOKEN)[0]
             ]
         )
     
-    assiatant_starter = "" if not use_placeholder else "<|im_start|>assistant<|recipient|>os\npyautogui.click(<|actor_start|><|actor_pad|><|actor_end|>)"
+    assiatant_starter = "" if not use_placeholder else "<|im_start|>assistant<|recipient|>os\npyautogui.click(<|pointer_start|><|pointer_pad|><|pointer_end|>)"
 
     pred = {
         "output_text": None, # generated text
@@ -258,14 +258,14 @@ def inference(conversation, model, tokenizer, data_processor, logits_processor=N
     output_text = tokenizer.decode(generated_ids, skip_special_tokens=False, clean_up_tokenization_spaces=False)
     pred["output_text"] = output_text
 
-    # check if there are <ACTOR_TOKEN> is inside the input_ids or generated_ids
+    # check if there are <POINTER_TOKEN> is inside the input_ids or generated_ids
     if use_placeholder:
-        actor_pad_mask = (inputs["input_ids"][0] == model.config.actor_pad_token_id) # n_all_input_tokens
+        pointer_pad_mask = (inputs["input_ids"][0] == model.config.pointer_pad_token_id) # n_all_input_tokens
     else:
-        actor_pad_mask = (generated_ids[:-1] == model.config.actor_pad_token_id) # seq_len_generated_ids-1
+        pointer_pad_mask = (generated_ids[:-1] == model.config.pointer_pad_token_id) # seq_len_generated_ids-1
 
-    # if there are no <ACTOR_TOKEN> in the input_ids or generated_ids, return the pred
-    if len(actor_pad_mask) == 0:
+    # if there are no <POINTER_TOKEN> in the input_ids or generated_ids, return the pred
+    if len(pointer_pad_mask) == 0:
         return pred
     
     # otherwise, get the coordinate from the action head
@@ -274,12 +274,12 @@ def inference(conversation, model, tokenizer, data_processor, logits_processor=N
     else:
         decoder_hidden_states = [step_hidden_states[-1][0] for step_hidden_states in results.hidden_states[1:]]
         decoder_hidden_states = torch.cat(decoder_hidden_states, dim=0) # seq_len_generated_ids-1, hidden_size
-    decoder_hidden_states = decoder_hidden_states[actor_pad_mask] # n_actor_pad_tokens, hidden_size
+    decoder_hidden_states = decoder_hidden_states[pointer_pad_mask] # n_pointer_pad_tokens, hidden_size
 
     # get the image embeddings as encoder vectors
     image_embeds = model.visual(inputs["pixel_values"], grid_thw=inputs["image_grid_thw"]) # n_image_tokens, hidden_size
 
-    attn_scores, _ = model.multi_patch_action_head(image_embeds, decoder_hidden_states)
+    attn_scores, _ = model.multi_patch_pointer_head(image_embeds, decoder_hidden_states)
     pred["attn_scores"] = attn_scores.tolist()
 
     _, n_height, n_width = (inputs["image_grid_thw"][0] // model.visual.spatial_merge_size).tolist()

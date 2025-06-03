@@ -13,19 +13,19 @@ from transformers import (
     Qwen2VLProcessor,
 )
 
-from gui_actor.constants import IGNORE_INDEX
 from gui_actor.dataset import LazySupervisedDataset
 from gui_actor.trainer import AGUVISTrainer, rank0_print, safe_save_model_for_hf_trainer
 from gui_actor.utils import dump_args_to_json
 
 from gui_actor.constants import (
+    IGNORE_INDEX,
     ADDITIONAL_SPECIAL_TOKENS,
-    DEFAULT_ACTOR_START_TOKEN,
-    DEFAULT_ACTOR_END_TOKEN,
-    DEFAULT_ACTOR_PAD_TOKEN,
+    DEFAULT_POINTER_START_TOKEN,
+    DEFAULT_POINTER_END_TOKEN,
+    DEFAULT_POINTER_PAD_TOKEN,
 )
 
-from gui_actor.modeling import Qwen2VLForConditionalGenerationWithActionHead
+from gui_actor.modeling import Qwen2VLForConditionalGenerationWithPointer
 
 apply_liger_kernel_to_qwen2_vl()
 
@@ -63,13 +63,13 @@ class TrainingArguments(transformers.TrainingArguments):
     verbose_logging: bool = field(default=False)
     
     unfreeze_all_parameters: bool = field(default=False)
-    unfreeze_action_head: bool = field(default=True)
+    unfreeze_pointer_head: bool = field(default=True)
     unfreeze_lm_head: bool = field(default=False)
     unfreeze_base_model: bool = field(default=False)
     unfreeze_last_n_layers: int = field(default=-1)
     unfreeze_new_tokens: bool = field(default=True)
     unfreeze_visual: bool = field(default=False)
-    actor_loss_weight: float = field(default=0.1)
+    pointer_loss_weight: float = field(default=0.1)
     lm_loss_weight: float = field(default=-1.0)
 
 # def mask_embedding_grad(grad):
@@ -109,11 +109,11 @@ def smart_tokenizer_and_embedding_resize(
         output_embeddings[-num_new_tokens:] = output_embeddings_avg
 
 
-def update_actor_token_ids(model_config: transformers.PretrainedConfig, tokenizer: transformers.PreTrainedTokenizer):
-    model_config.actor_start_token_id = tokenizer.encode(DEFAULT_ACTOR_START_TOKEN)[0]
-    model_config.actor_end_token_id = tokenizer.encode(DEFAULT_ACTOR_END_TOKEN)[0]
-    model_config.actor_pad_token_id = tokenizer.encode(DEFAULT_ACTOR_PAD_TOKEN)[0]
-    rank0_print(f"Updated actor token ids: {model_config.actor_pad_token_id}, {model_config.actor_start_token_id}, {model_config.actor_end_token_id}")
+def update_pointer_token_ids(model_config: transformers.PretrainedConfig, tokenizer: transformers.PreTrainedTokenizer):
+    model_config.pointer_start_token_id = tokenizer.encode(DEFAULT_POINTER_START_TOKEN)[0]
+    model_config.pointer_end_token_id = tokenizer.encode(DEFAULT_POINTER_END_TOKEN)[0]
+    model_config.pointer_pad_token_id = tokenizer.encode(DEFAULT_POINTER_PAD_TOKEN)[0]
+    rank0_print(f"Updated pointer token ids: {model_config.pointer_pad_token_id}, {model_config.pointer_start_token_id}, {model_config.pointer_end_token_id}")
 
 def setup_params_to_update(model: transformers.PreTrainedModel, training_args: TrainingArguments):
     if training_args.unfreeze_all_parameters:
@@ -125,11 +125,11 @@ def setup_params_to_update(model: transformers.PreTrainedModel, training_args: T
         for p in model.parameters():
             p.requires_grad = False
 
-        if training_args.unfreeze_action_head:
-            rank0_print(f"Unfreezing action head parameters...")
-            # for p in model.action_head.parameters():
+        if training_args.unfreeze_pointer_head:
+            rank0_print(f"Unfreezing pointer head parameters...")
+            # for p in model.pointer_head.parameters():
             #     p.requires_grad = True
-            for p in model.multi_patch_action_head.parameters():
+            for p in model.multi_patch_pointer_head.parameters():
                 p.requires_grad = True
 
         if training_args.unfreeze_lm_head:
@@ -227,7 +227,7 @@ def train():
         # rank0_print(f"evaluation_args = {vars(evaluation_args)}\n\n")
 
     # set up model
-    model = Qwen2VLForConditionalGenerationWithActionHead.from_pretrained(
+    model = Qwen2VLForConditionalGenerationWithPointer.from_pretrained(
         model_args.model_name_or_path,
         cache_dir=training_args.cache_dir,
         attn_implementation="flash_attention_2" if model_args.flash_attn_2_enabled else None,
@@ -235,7 +235,7 @@ def train():
         low_cpu_mem_usage=False,
     )
     model.config.use_cache = False
-    model.reset_loss_weights(actor_loss_weight=training_args.actor_loss_weight, lm_loss_weight=training_args.lm_loss_weight)
+    model.reset_loss_weights(pointer_loss_weight=training_args.pointer_loss_weight, lm_loss_weight=training_args.lm_loss_weight)
 
     if training_args.gradient_checkpointing:
         if hasattr(model, "enable_input_require_grads"):
@@ -260,7 +260,7 @@ def train():
         tokenizer=tokenizer,
         model=model,
     )
-    update_actor_token_ids(model.config, tokenizer)
+    update_pointer_token_ids(model.config, tokenizer)
 
     data_args.processor = Qwen2VLProcessor.from_pretrained(
         model_args.model_name_or_path, min_pixels=data_args.min_pixels, max_pixels=data_args.max_pixels

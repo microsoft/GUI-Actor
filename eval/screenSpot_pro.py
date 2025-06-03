@@ -8,10 +8,10 @@ from datasets import load_dataset
 from transformers import Qwen2VLProcessor
 from PIL import Image
 from gui_actor.constants import chat_template
-from gui_actor.modeling import Qwen2VLForConditionalGenerationWithActionHead
+from gui_actor.modeling import Qwen2VLForConditionalGenerationWithPointer
 from gui_actor.inference import inference, ForceFollowTokensLogitsProcessor
 from gui_actor.utils import do_boxes_overlap
-from gui_actor.constants import DEFAULT_ACTOR_PAD_TOKEN, DEFAULT_ACTOR_END_TOKEN, grounding_system_message
+from gui_actor.constants import DEFAULT_POINTER_PAD_TOKEN, DEFAULT_POINTER_END_TOKEN, grounding_system_message
 
 IMAGE_PATCH_SIZE =14
 
@@ -34,7 +34,7 @@ def evaluate(model_name_or_path, data_fn, image_dir, use_placeholder, topk, resi
     for k, v in tokenizer.added_tokens_encoder.items():
         print(v, k)
 
-    model = Qwen2VLForConditionalGenerationWithActionHead.from_pretrained(
+    model = Qwen2VLForConditionalGenerationWithPointer.from_pretrained(
         model_name_or_path,
         torch_dtype=torch.bfloat16,
         device_map="cuda:0",
@@ -42,10 +42,10 @@ def evaluate(model_name_or_path, data_fn, image_dir, use_placeholder, topk, resi
     ).eval()
     print(f"Loaded model from {model_name_or_path}")
 
-    logits_processor_actor = ForceFollowTokensLogitsProcessor(
-        token_a_id=tokenizer.encode(DEFAULT_ACTOR_PAD_TOKEN)[0],
+    logits_processor_pointer = ForceFollowTokensLogitsProcessor(
+        token_a_id=tokenizer.encode(DEFAULT_POINTER_PAD_TOKEN)[0],
         forced_sequence=[
-            tokenizer.encode(DEFAULT_ACTOR_END_TOKEN)[0]
+            tokenizer.encode(DEFAULT_POINTER_END_TOKEN)[0]
         ]
     )
 
@@ -110,7 +110,7 @@ def evaluate(model_name_or_path, data_fn, image_dir, use_placeholder, topk, resi
             },
         ]
 
-        pred = inference(conversation, model, tokenizer, data_processor, logits_processor=logits_processor_actor, use_placeholder=use_placeholder, topk=3)
+        pred = inference(conversation, model, tokenizer, data_processor, logits_processor=logits_processor_pointer, use_placeholder=use_placeholder, topk=3)
         topk_points = pred["topk_points"]
         gt_bbox = ele["bbox_x1y1x2y2"]
 

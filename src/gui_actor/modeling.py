@@ -2,37 +2,37 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from transformers.models.qwen2_vl.modeling_qwen2_vl import *
+from transformers.models.qwen2_vl.modeling_qwen2_vl import Qwen2VLCausalLMOutputWithPast, Qwen2VLForConditionalGeneration
 from gui_actor.constants import IGNORE_INDEX
 from typing import List, Tuple, Union, Optional
 from gui_actor.trainer import rank0_print
 
-class QwenVLwithActionHeadOutputWithPast(Qwen2VLCausalLMOutputWithPast):
+class QwenVLwithVisionHeadOutputWithPast(Qwen2VLCausalLMOutputWithPast):
     """
-    Output class for Qwen2VL with action head, extending the base output class.
+    Output class for Qwen2VL with pointer head, extending the base output class.
     
     Args:
         lm_loss (`torch.FloatTensor` of shape `(1,)`, *optional*):
             Language modeling loss.
-        actor_loss (`torch.FloatTensor` of shape `(1,)`, *optional*):
-            Vision actor network loss.
-        actor_scores (`List[torch.FloatTensor]`, *optional*):
-            Attention scores from the actor network, one tensor per batch item.
+        pointer_loss (`torch.FloatTensor` of shape `(1,)`, *optional*):
+            Vision pointer network loss.
+        pointer_scores (`List[torch.FloatTensor]`, *optional*):
+            Attention scores from the pointer network, one tensor per batch item.
         loss (`torch.FloatTensor` of shape `(1,)`, *optional*):
-            Combined loss (weighted sum of lm_loss and actor_loss).
+            Combined loss (weighted sum of lm_loss and pointer_loss).
         logits (`torch.FloatTensor` of shape `(batch_size, sequence_length, config.vocab_size)`):
             Prediction scores from the language modeling head.
         past_key_values, hidden_states, attentions, rope_deltas:
             Same as parent class.
     """
-    def __init__(self, lm_loss=None, actor_loss=None, actor_scores=None, *args, **kwargs):
+    def __init__(self, lm_loss=None, pointer_loss=None, pointer_scores=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.lm_loss = lm_loss
-        self.actor_loss = actor_loss
-        self.actor_scores = actor_scores
+        self.pointer_loss = pointer_loss
+        self.pointer_scores = pointer_scores
 
 
-class ActionHead_MultiPatch(nn.Module):
+class VisionHead_MultiPatch(nn.Module):
     def __init__(self, d_model, projection_dim, num_attention_heads=8, dropout_rate=0.1):
         super().__init__()
         self.d_model = d_model
@@ -112,16 +112,16 @@ class ActionHead_MultiPatch(nn.Module):
         return attn_weights, loss
 
 
-class Qwen2VLForConditionalGenerationWithActionHead(Qwen2VLForConditionalGeneration):
+class Qwen2VLForConditionalGenerationWithPointer(Qwen2VLForConditionalGeneration):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.multi_patch_action_head = ActionHead_MultiPatch(self.config.hidden_size, self.config.hidden_size)
-        self.actor_loss_weight = kwargs.get("actor_loss_weight", 1.0)
+        self.multi_patch_pointer_head = VisionHead_MultiPatch(self.config.hidden_size, self.config.hidden_size)
+        self.pointer_loss_weight = kwargs.get("pointer_loss_weight", 1.0)
         self.lm_loss_weight = kwargs.get("lm_loss_weight", 1.0)
         self.post_init()
     
-    def reset_loss_weights(self, actor_loss_weight, lm_loss_weight):
-        self.actor_loss_weight = actor_loss_weight
+    def reset_loss_weights(self, pointer_loss_weight, lm_loss_weight):
+        self.pointer_loss_weight = pointer_loss_weight
         self.lm_loss_weight = lm_loss_weight
    
     def forward(self,
@@ -146,7 +146,7 @@ class Qwen2VLForConditionalGenerationWithActionHead(Qwen2VLForConditionalGenerat
                 multi_patch_labels: Optional[torch.Tensor] = None, # shape: list [(n_target, n_visual), ...]; binary mask of patches in bbox
                 if_multi_patch: bool = True,
                 coordinates: Optional[List[Tuple[float, float]]] = None,
-                verbose: bool = False) -> Union[Tuple, QwenVLwithActionHeadOutputWithPast]:
+                verbose: bool = False) -> Union[Tuple, QwenVLwithVisionHeadOutputWithPast]:
 
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
@@ -252,7 +252,7 @@ class Qwen2VLForConditionalGenerationWithActionHead(Qwen2VLForConditionalGenerat
             shift_logits = logits[..., :-1, :].contiguous()
             shift_labels = labels[..., 1:].contiguous()
             # Flatten the tokens
-            loss_fct = CrossEntropyLoss()
+            loss_fct = nn.CrossEntropyLoss()
             shift_logits = shift_logits.view(-1, self.config.vocab_size)
             shift_labels = shift_labels.view(-1)
             # Enable model parallelism
@@ -261,11 +261,11 @@ class Qwen2VLForConditionalGenerationWithActionHead(Qwen2VLForConditionalGenerat
 
 
         # If vision supervision is requested, process the action head.
-        actor_loss = None
-        actor_scores = []
+        pointer_loss = None
+        pointer_scores = []
         if visual_token_indices_of_coordinates is not None:
             batch_size = input_ids.shape[0]
-            actor_losses = []
+            pointer_losses = []
             
             # Process each sample individually because the number of visual and target tokens may vary.
             for i in range(batch_size):
@@ -280,7 +280,7 @@ class Qwen2VLForConditionalGenerationWithActionHead(Qwen2VLForConditionalGenerat
                 visual_indices = torch.nonzero(visual_mask, as_tuple=False).squeeze(-1) # shape: (n_visual,)
 
                 # Identify target tokens (the ones that should attend to visual features).
-                target_mask = (token_ids == self.config.actor_pad_token_id)
+                target_mask = (token_ids == self.config.pointer_pad_token_id)
                 target_indices = torch.nonzero(target_mask, as_tuple=False).squeeze(-1)
                 
                 # If either visual or target tokens are missing, skip this sample.
@@ -312,7 +312,7 @@ class Qwen2VLForConditionalGenerationWithActionHead(Qwen2VLForConditionalGenerat
                         raise ValueError(f"Sample {i} has mismatched target counts: {sample_labels.shape[0]} labels but found {target_indices.shape[0]} target tokens")
 
                     # Process using VisionHead_MultiPatch
-                    attn_scores, loss_v = self.multi_patch_action_head(
+                    attn_scores, loss_v = self.multi_patch_pointer_head(
                         visual_embeds,
                         target_hidden,
                         labels=sample_labels
@@ -321,28 +321,28 @@ class Qwen2VLForConditionalGenerationWithActionHead(Qwen2VLForConditionalGenerat
                 else:
                     # Deprecated branch - single patch mode is no longer used
                     # Run the action head to compute the attention (from target tokens to visual tokens) and its loss.
-                    attn_scores, loss_v = self.action_head(visual_embeds, target_hidden, labels=gt)
+                    attn_scores, loss_v = self.pointer_head(visual_embeds, target_hidden, labels=gt)
                 
-                actor_scores.append(attn_scores.detach().cpu())
+                pointer_scores.append(attn_scores.detach().cpu())
 
-                actor_losses.append(loss_v * 0.0 if dummy_target else loss_v)
+                pointer_losses.append(loss_v * 0.0 if dummy_target else loss_v)
             
-            actor_loss = torch.stack(actor_losses).mean()
+            pointer_loss = torch.stack(pointer_losses).mean()
 
         # Combine the LM loss and vision loss using the provided loss weights.
         
         if lm_loss is None:
-            total_loss = actor_loss
-        elif actor_loss is None:
+            total_loss = pointer_loss
+        elif pointer_loss is None:
             total_loss = lm_loss
         else:
-            total_loss = self.lm_loss_weight * lm_loss + self.actor_loss_weight * actor_loss
+            total_loss = self.lm_loss_weight * lm_loss + self.pointer_loss_weight * pointer_loss
 
         if return_dict:
-            return QwenVLwithActionHeadOutputWithPast(
+            return QwenVLwithVisionHeadOutputWithPast(
                 lm_loss=lm_loss,
-                actor_loss=actor_loss,
-                actor_scores=actor_scores,
+                pointer_loss=pointer_loss,
+                pointer_scores=pointer_scores,
                 loss=total_loss,
                 logits=logits,
                 past_key_values=outputs.past_key_values,
@@ -354,8 +354,8 @@ class Qwen2VLForConditionalGenerationWithActionHead(Qwen2VLForConditionalGenerat
             # When labels are provided, parent's forward returns a tuple with loss as the first element.
             if labels is not None:
                 # Replace the LM loss with the combined loss.
-                output = (lm_loss, actor_loss, logits, actor_scores,) + outputs[1:]
-                print(f"returning: total_loss, logits, actor_scores, ...")
+                output = (lm_loss, pointer_loss, logits, pointer_scores,) + outputs[1:]
+                print(f"returning: total_loss, logits, pointer_scores, ...")
                 return (total_loss,) + output if total_loss is not None else output
             else:
                 return outputs

@@ -29,11 +29,11 @@ torchrun --nproc_per_node=4 train.py \
   --dataloader_num_workers 8 \
   --max_pixels 5720064 \
   --unfreeze_all_parameters False \
-  --unfreeze_action_head True \
+  --unfreeze_pointer_head True \
   --unfreeze_lm_head False \
   --unfreeze_base_model False \
   --unfreeze_last_n_layers -1 \
   --unfreeze_new_tokens True \
   --unfreeze_visual False \
-  --actor_loss_weight 1.0 \
+  --pointer_loss_weight 1.0 \
   --lm_loss_weight -1.0
