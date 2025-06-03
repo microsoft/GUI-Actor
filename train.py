@@ -72,11 +72,11 @@ class TrainingArguments(transformers.TrainingArguments):
     actor_loss_weight: float = field(default=0.1)
     lm_loss_weight: float = field(default=-1.0)
 
-def mask_embedding_grad(grad):
-    n_new_tokens = len(ADDITIONAL_SPECIAL_TOKENS)
-    mask = torch.zeros_like(grad)
-    mask[-n_new_tokens:] = 1.0
-    return grad * mask
+# def mask_embedding_grad(grad):
+#     n_new_tokens = len(ADDITIONAL_SPECIAL_TOKENS)
+#     mask = torch.zeros_like(grad)
+#     mask[-n_new_tokens:] = 1.0
+#     return grad * mask
 
 def smart_tokenizer_and_embedding_resize(
     special_tokens_dict: Dict,
@@ -150,6 +150,7 @@ def setup_params_to_update(model: transformers.PreTrainedModel, training_args: T
         if training_args.unfreeze_new_tokens:
             rank0_print(f"Unfreezing new tokens parameters via embedding hook...")
             model.model.embed_tokens.weight.requires_grad = True
+            # Registering hook before Trainer initialization is invalid, so it is disabled
             # model.model.embed_tokens.weight.register_hook(mask_embedding_grad)
         
         if training_args.unfreeze_visual:
@@ -281,7 +282,7 @@ def train():
         **data_module,
     )
 
-    # 处理embed层的梯度
+    # When LiteTrain, only update the gradient of the new tokens
     if training_args.unfreeze_new_tokens:
         emb_param = None
         for n, p in trainer.model.named_parameters():
