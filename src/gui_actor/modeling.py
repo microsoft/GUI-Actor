@@ -50,7 +50,7 @@ class ActionHead_MultiPatch(nn.Module):
             nn.Linear(projection_dim, d_model)
         )
 
-        # 添加视觉特征的自注意力层
+        # Add self-attention layer for visual features
         self.self_attention = nn.MultiheadAttention(
             embed_dim=d_model,
             num_heads=num_attention_heads,
@@ -58,11 +58,10 @@ class ActionHead_MultiPatch(nn.Module):
             batch_first=True
         )
         
-        # 层标准化和残差连接
+        # Layer normalization and residual connection
         self.layer_norm = nn.LayerNorm(d_model)
         self.dropout = nn.Dropout(dropout_rate)
 
-        
     def forward(self,
                 hidden_state_enc,  # shape: [n_enc, d_model] where n_enc can vary with image size
                 hidden_state_dec,  # shape: [n_dec, d_model] there can be multiple query in one sample
@@ -78,9 +77,9 @@ class ActionHead_MultiPatch(nn.Module):
             # attn_mask=attention_mask,
             need_weights=False
         )
-        # 残差连接和层标准化
+        # Residual connection and layer normalization
         hidden_state_enc_ctx = self.layer_norm(enc_input + self.dropout(attn_output))
-        # 去除batch维度
+        # Remove batch dimension
         hidden_state_enc_ctx = hidden_state_enc_ctx.squeeze(0)  # [n_enc, d_model]
 
         # Apply the projection networks.
@@ -99,12 +98,12 @@ class ActionHead_MultiPatch(nn.Module):
         if (labels is not None) and (not do_single_patch):
             epsilon = 1e-8
             labels_float = labels.float()
-            # 对每一行归一化，得到目标概率分布
+            # Normalize each row to get target probability distribution
             target_dist = labels_float / (labels_float.sum(dim=-1, keepdim=True) + epsilon)
 
-            # 对logits使用log_softmax
+            # Apply log_softmax to logits
             pred_log_probs = F.log_softmax(patch_logits, dim=-1)
-            # 使用 KL 散度作为损失
+            # Use KL divergence as loss
             loss = F.kl_div(pred_log_probs, target_dist, reduction='batchmean')
 
         if do_single_patch and (labels is not None):
@@ -306,13 +305,13 @@ class Qwen2VLForConditionalGenerationWithActionHead(Qwen2VLForConditionalGenerat
                 visual_embeds = inputs_embeds[i][visual_indices]
                 target_hidden = hs[target_indices]  # shape: (n_target, d_model)
 
-                # 计算multi-patch模式下的loss
+                # Calculate loss for multi-patch mode
                 if if_multi_patch:
-                    # 确保样本的target数量是一致的
+                    # Ensure the number of targets matches between sample and labels
                     if sample_labels.shape[0] != target_indices.shape[0]:
-                        raise ValueError(f"样本 {i} 的target数量不匹配：标签有 {sample_labels.shape[0]} 个，但找到了 {target_indices.shape[0]} 个目标token")
+                        raise ValueError(f"Sample {i} has mismatched target counts: {sample_labels.shape[0]} labels but found {target_indices.shape[0]} target tokens")
 
-                    # 使用VisionHead_MultiPatch进行处理
+                    # Process using VisionHead_MultiPatch
                     attn_scores, loss_v = self.multi_patch_action_head(
                         visual_embeds,
                         target_hidden,
@@ -320,6 +319,7 @@ class Qwen2VLForConditionalGenerationWithActionHead(Qwen2VLForConditionalGenerat
                     )
                     
                 else:
+                    # Deprecated branch - single patch mode is no longer used
                     # Run the action head to compute the attention (from target tokens to visual tokens) and its loss.
                     attn_scores, loss_v = self.action_head(visual_embeds, target_hidden, labels=gt)
                 

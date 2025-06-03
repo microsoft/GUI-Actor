@@ -120,12 +120,12 @@ def get_multi_patch_labels(image_processor, image, bbox_gt):
     if len(image) != 1:
         raise ValueError(f"Expected 1 image, got {len(image)}")
 
-    # get the original image size and the resized image size
+    # Get the original image size and the resized image size
     image = image[0]
     w, h = image.size
 
     bbox_gt = [bbox_gt[0]*w, bbox_gt[1]*h, bbox_gt[2]*w, bbox_gt[3]*h]
-    # 提取边界框坐标
+    # Extract bounding box coordinates
     x_min, y_min, x_max, y_max = bbox_gt
     x_min = max(0, x_min)
     y_min = max(0, y_min)
@@ -137,19 +137,19 @@ def get_multi_patch_labels(image_processor, image, bbox_gt):
     grid_h, grid_w = h // merge_patch_size, w // merge_patch_size
 
     binary_mask = torch.zeros(grid_h * grid_w)
-    # 遍历所有patch，检查它们是否与边界框重叠
+    # Iterate through all patches, check if they overlap with the bounding box
     for y_idx in range(grid_h):
         for x_idx in range(grid_w):
-            # 计算patch的边界
+            # Calculate patch boundaries
             patch_x_min = x_idx * merge_patch_size
             patch_y_min = y_idx * merge_patch_size
             patch_x_max = patch_x_min + merge_patch_size
             patch_y_max = patch_y_min + merge_patch_size
             
-            # 检查patch是否与边界框重叠
+            # Check if patch overlaps with the bounding box
             if not (patch_x_max <= x_min or patch_x_min >= x_max or 
                     patch_y_max <= y_min or patch_y_min >= y_max):
-                # 计算patch在展平网格中的索引
+                # Calculate patch index in the flattened grid
                 patch_idx = y_idx * grid_w + x_idx
                 binary_mask[patch_idx] = 1
 
@@ -337,7 +337,7 @@ class LazySupervisedDataset(Dataset):
                 "visual_token_indices_of_coordinates": data_dict["visual_token_indices_of_coordinates"][0],
                 "pixel_values": data_dict["pixel_values"],
                 "image_grid_thw": data_dict["image_grid_thw"],
-                "multi_patch_labels": data_dict["multi_patch_labels"][0],   # 添加multi_patch_labels                
+                "multi_patch_labels": data_dict["multi_patch_labels"][0],   # add multi_patch_labels                
             }
 
         data_dict["id"] = item_id
@@ -509,7 +509,7 @@ class LazySupervisedDataset(Dataset):
         visual_token_indices_of_coordinates = torch.tensor([visual_token_indices_of_coordinates], dtype=torch.long) if len(visual_token_indices_of_coordinates) > 0 else [None]
         coordinates = [coordinates] if len(coordinates) > 0 else [None]
 
-        # 处理multi_patch_labels
+        # process multi_patch_labels
         if len(multi_patch_labels) > 0:
             multi_patch_labels = [torch.stack(multi_patch_labels)]
         else:
