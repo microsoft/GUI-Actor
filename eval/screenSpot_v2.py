@@ -4,9 +4,8 @@ import json
 import argparse
 
 from tqdm import tqdm
-from qwen_vl_utils import process_vision_info
 from datasets import load_dataset
-from transformers import Qwen2VLProcessor, LogitsProcessorList
+from transformers import Qwen2VLProcessor
 
 from gui_actor.constants import chat_template
 from gui_actor.modeling import Qwen2VLForConditionalGenerationWithActionHead
