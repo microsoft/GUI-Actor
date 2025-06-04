@@ -27,7 +27,7 @@
 <sup>*</sup> Equal Contribution&nbsp;&nbsp;&nbsp;&nbsp;<sup>†</sup> Leadership  
 
 <h4>
-<a href="https://www.arxiv.org/pdf/2502.13130">📄 arXiv Paper</a> &nbsp; 
+<a href="https://www.arxiv.org/pdf/2506.03143">📄 arXiv Paper</a> &nbsp; 
 <a href="https://aka.ms/GUI-Actor/">🌐 Project Page</a> &nbsp; 
 <a href="https://huggingface.co/microsoft/GUI-Actor-7B-Qwen2-VL">🤗 Hugging Face Models</a>
 </h4>
@@ -134,6 +134,72 @@ For evaluation on ScreenSpot-Pro, you first need to download the data from [here
 python eval/screenSpot_pro.py --save_path <path_to_save_results> --data_path <path_to_data_dir>
 ```
 
+Example usage:
+```python
+import torch
+
+from qwen_vl_utils import process_vision_info
+from datasets import load_dataset
+from transformers import Qwen2VLProcessor
+from gui_actor.constants import chat_template
+from gui_actor.modeling import Qwen2VLForConditionalGenerationWithPointer
+from gui_actor.inference import inference
+
+
+# load model
+model_name_or_path = "microsoft/GUI-Actor-7B-Qwen2-VL"
+data_processor = Qwen2VLProcessor.from_pretrained(model_name_or_path)
+tokenizer = data_processor.tokenizer
+model = Qwen2VLForConditionalGenerationWithPointer.from_pretrained(
+    model_name_or_path,
+    torch_dtype=torch.bfloat16,
+    device_map="cuda:0",
+    attn_implementation="flash_attention_2"
+).eval()
+
+# prepare example
+dataset = load_dataset("rootsautomation/ScreenSpot")["test"]
+example = dataset[0]
+print(f"Intruction: {example['instruction']}")
+print(f"ground-truth action region (x1, y1, x2, y2): {[round(i, 2) for i in example['bbox']]}")
+
+conversation = [
+    {
+        "role": "system",
+        "content": [
+            {
+                "type": "text",
+                "text": "You are a GUI agent. You are given a task and a screenshot of the screen. You need to perform a series of pyautogui actions to complete the task.",
+            }
+        ]
+    },
+    {
+        "role": "user",
+        "content": [
+            {
+                "type": "image",
+                "image": example["image"], # PIL.Image.Image or str to path
+                # "image_url": "https://xxxxx.png" or "https://xxxxx.jpg" or "file://xxxxx.png" or "data:image/png;base64,xxxxxxxx", will be split by "base64,"
+            },
+            {
+                "type": "text",
+                "text": example["instruction"]
+            },
+        ],
+    },
+]
+
+# inference
+pred = inference(conversation, model, tokenizer, data_processor, use_placeholder=True, topk=3)
+px, py = pred["topk_points"][0]
+print(f"Predicted click point: [{round(px, 4)}, {round(py, 4)}]")
+
+# >> Model Response
+# Intruction: close this window
+# ground-truth action region (x1, y1, x2, y2): [0.9479, 0.1444, 0.9938, 0.2074]
+# Predicted click point: [0.9709, 0.1548]
+```
+
 ## :+1: Acknowledgements
 
 This project is built upon the following projects. Thanks for their great work!
@@ -150,13 +216,13 @@ We also thank the authors of the following projects for their insightful work, a
 ## :memo: Citation
 If you find this work useful in your research, please consider citing:
 ```bibtex
-@article{wu2025guiactor,
+@misc{wu2025guiactor,
     title={GUI-Actor: Coordinate-Free Visual Grounding for GUI Agents}, 
     author={Qianhui Wu and Kanzhi Cheng and Rui Yang and Chaoyun Zhang and Jianwei Yang and Huiqiang Jiang and Jian Mu and Baolin Peng and Bo Qiao and Reuben Tan and Si Qin and Lars Liden and Qingwei Lin and Huan Zhang and Tong Zhang and Jianbing Zhang and Dongmei Zhang and Jianfeng Gao},
     year={2025},
-    eprint={},
+    eprint={2506.03143},
     archivePrefix={arXiv},
     primaryClass={cs.CV},
-    url={},
+    url={https://arxiv.org/abs/2506.03143},
 }
 ```
