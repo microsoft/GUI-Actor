@@ -127,7 +127,12 @@ bash scripts/train.sh
 ```
 
 ## :checkered_flag: Evaluation on GUI Grounding Benchmarks
-For evaluation on ScreenSpot and ScreenSpot-v2, you can directly run the scripts under the `scripts/` folder like `python eval/screenSpot.py` or `python eval/screenSpot_v2.py`.
+For evaluation on ScreenSpot and ScreenSpot-v2, you can directly run the scripts under the `scripts/` folder like:
+```bash
+# model_type: qwen2vl or qwen25vl
+python eval/screenSpot.py --model_type qwen2vl --model_name_or_path microsoft/GUI-Actor-2B-Qwen2-VL
+python eval/screenSpot_v2.py --model_type qwen25vl --model_name_or_path microsoft/GUI-Actor-3B-Qwen2.5-VL
+```
 
 For evaluation on ScreenSpot-Pro, you first need to download the data from [here](https://huggingface.co/datasets/likaixin/ScreenSpot-Pro), then run the following command:
 ```bash

@@ -8,6 +8,7 @@ torchrun --nproc_per_node=4 train.py \
   --data_path data/data_config.yaml \
   --image_folder "" \
   --model_name_or_path ${llm_model} \
+  --model_type "qwen2vl" \
   --group_by_modality_length True \
   --bf16 True \
   --output_dir ${output_dir} \
