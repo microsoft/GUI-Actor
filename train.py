@@ -26,6 +26,7 @@ from gui_actor.constants import (
 )
 
 from gui_actor.modeling import Qwen2VLForConditionalGenerationWithPointer
+from gui_actor.modeling_qwen25vl import Qwen2_5_VLForConditionalGenerationWithPointer
 
 apply_liger_kernel_to_qwen2_vl()
 
@@ -39,6 +40,7 @@ local_rank = None
 class ModelArguments:
     model_name_or_path: Optional[str] = field(default="facebook/opt-125m")
     flash_attn_2_enabled: bool = field(default=True)
+    model_type: str = field(default="qwen2vl", metadata={"help": "model type: qwen2vl or qwen25vl"})
 
 @dataclass
 class DataArguments:
@@ -227,13 +229,25 @@ def train():
         # rank0_print(f"evaluation_args = {vars(evaluation_args)}\n\n")
 
     # set up model
-    model = Qwen2VLForConditionalGenerationWithPointer.from_pretrained(
-        model_args.model_name_or_path,
-        cache_dir=training_args.cache_dir,
-        attn_implementation="flash_attention_2" if model_args.flash_attn_2_enabled else None,
-        torch_dtype=(torch.bfloat16 if training_args.bf16 else None),
-        low_cpu_mem_usage=False,
-    )
+    if model_args.model_type == "qwen2vl":
+        model = Qwen2VLForConditionalGenerationWithPointer.from_pretrained(
+            model_args.model_name_or_path,
+            cache_dir=training_args.cache_dir,
+            attn_implementation="flash_attention_2" if model_args.flash_attn_2_enabled else None,
+            torch_dtype=(torch.bfloat16 if training_args.bf16 else None),
+            low_cpu_mem_usage=False,
+        )
+    elif model_args.model_type == "qwen25vl":
+        model = Qwen2_5_VLForConditionalGenerationWithPointer.from_pretrained(
+            model_args.model_name_or_path,
+            cache_dir=training_args.cache_dir,
+            attn_implementation="flash_attention_2" if model_args.flash_attn_2_enabled else None,
+            torch_dtype=(torch.bfloat16 if training_args.bf16 else None),
+            low_cpu_mem_usage=False,
+        )
+    else:
+        raise ValueError(f"Unsupported model type: {model_args.model_type}")
+
     model.config.use_cache = False
     model.reset_loss_weights(pointer_loss_weight=training_args.pointer_loss_weight, lm_loss_weight=training_args.lm_loss_weight)
 

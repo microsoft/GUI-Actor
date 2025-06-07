@@ -9,6 +9,7 @@ from transformers import Qwen2VLProcessor
 
 from gui_actor.constants import chat_template
 from gui_actor.modeling import Qwen2VLForConditionalGenerationWithPointer
+from gui_actor.modeling_qwen25vl import Qwen2_5_VLForConditionalGenerationWithPointer
 from gui_actor.inference import inference, ForceFollowTokensLogitsProcessor
 from gui_actor.utils import do_boxes_overlap
 from gui_actor.constants import DEFAULT_POINTER_PAD_TOKEN, DEFAULT_POINTER_END_TOKEN, grounding_system_message
@@ -27,19 +28,32 @@ def normalize_bbox(bbox_x1y1x2y2, img_width, img_height):
         y2 = y2 / img_height
         return x1, y1, x2, y2
 
-def evaluate(model_name_or_path, use_placeholder, topk):
+def evaluate(model_name_or_path, use_placeholder, topk, model_type="qwen2vl"):
     # initialize model
     data_processor = Qwen2VLProcessor.from_pretrained(model_name_or_path)
     tokenizer = data_processor.tokenizer
     for k, v in tokenizer.added_tokens_encoder.items():
         print(v, k)
 
-    model = Qwen2VLForConditionalGenerationWithPointer.from_pretrained(
-        model_name_or_path,
-        torch_dtype=torch.bfloat16,
-        device_map="cuda:0",
-        attn_implementation="flash_attention_2"
-    ).eval()
+    if model_type == "qwen2vl":
+        print("Loading Qwen2-VL")
+        model = Qwen2VLForConditionalGenerationWithPointer.from_pretrained(
+            model_name_or_path,
+            torch_dtype=torch.bfloat16,
+            device_map="cuda:0",
+            attn_implementation="flash_attention_2"
+        ).eval()
+    elif model_type == "qwen25vl":
+        print("Loading Qwen2.5-VL")
+        model = Qwen2_5_VLForConditionalGenerationWithPointer.from_pretrained(
+            model_name_or_path,
+            torch_dtype=torch.bfloat16,
+            device_map="cuda:0",
+            attn_implementation="flash_attention_2"
+        ).eval()
+    else:
+        print("undefine model type")
+        input()
     print(f"Loaded model from {model_name_or_path}")
 
     logits_processor_pointer = ForceFollowTokensLogitsProcessor(
@@ -60,6 +74,12 @@ def evaluate(model_name_or_path, use_placeholder, topk):
             "gitlab": "web",
             "forum": "web"
         }
+
+    # special system message for our different models
+    if model_type == "qwen2vl":
+        grounding_system_message = "You are a GUI agent. You are given a task and a screenshot of the screen. You need to perform a series of pyautogui actions to complete the task."
+    elif model_type == "qwen25vl":
+        grounding_system_message =  "You are a GUI agent. Given a screenshot of the current GUI and a human instruction, your task is to locate the screen element that corresponds to the instruction. You should output a PyAutoGUI action that performs a click on the correct position. To indicate the click location, we will use some special tokens, which is used to refer to a visual patch later. For example, you can output: pyautogui.click(<your_special_token_here>)."
 
     results = []
     for i, example in tqdm(enumerate(dataset), total=len(dataset)):
@@ -248,6 +268,7 @@ python eval/screenSpot_v2.py --save_path <path_to_save_results>
 """
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--model_type", type=str, default="qwen2vl", choices=["qwen2vl", "qwen25vl"])
     parser.add_argument("--model_name_or_path", type=str, default="microsoft/GUI-Actor-2B-Qwen2-VL")
     parser.add_argument("--save_path", type=str, default="./")
     parser.add_argument('--topk', type=int, default=3, help='Topk')
@@ -271,7 +292,7 @@ if __name__ == "__main__":
             results = json.load(f)
     else:
         print(f"Evaluating {args.model_name_or_path}...")
-        results = evaluate(args.model_name_or_path, args.use_placeholder, args.topk)
+        results = evaluate(args.model_name_or_path, args.use_placeholder, args.topk, args.model_type)
         with open(pred_path, "w") as f:
             json.dump(results, f)
         print(f"Saved {len(results)} predictions to {pred_path}")
