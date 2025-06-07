@@ -57,9 +57,9 @@ Figure 1. **Left**: Model performance vs. training data scale on the ScreenSpot
 
 ## :bookmark_tabs: Todos
 We will be releasing all the following contents:
-- [x] Model training and evaluation based on Qwen2-VL
-- [x] Model checkpoint
-- [ ] Code for grounding verifier
+- [x] Model training and evaluation based on Qwen2-VL (2025.06.03)
+- [x] Model checkpoint (2025.06.03)
+- [x] Code for grounding verifier (2025.06.06)
 - [ ] Support for Qwen2.5-VL
 - [ ] Processed training data
 - [ ] Demo
