@@ -60,7 +60,7 @@ We will be releasing all the following contents:
 - [x] Model training and evaluation based on Qwen2-VL (2025.06.03)
 - [x] Model checkpoint (2025.06.03)
 - [x] Code for grounding verifier (2025.06.06)
-- [ ] Support for Qwen2.5-VL
+- [x] Support for Qwen2.5-VL (2025.06.07)
 - [ ] Processed training data
 - [ ] Demo
 
