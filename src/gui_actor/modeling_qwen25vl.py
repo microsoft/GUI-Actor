@@ -2,14 +2,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from transformers.models.qwen2_vl.modeling_qwen2_vl import Qwen2VLCausalLMOutputWithPast, Qwen2VLForConditionalGeneration
+from transformers.models.qwen2_5_vl.modeling_qwen2_5_vl import Qwen2_5_VLCausalLMOutputWithPast, Qwen2_5_VLForConditionalGeneration
 from gui_actor.constants import IGNORE_INDEX
 from typing import List, Tuple, Union, Optional
 from gui_actor.trainer import rank0_print
 
-class QwenVLwithVisionHeadOutputWithPast(Qwen2VLCausalLMOutputWithPast):
+class QwenVLwithVisionHeadOutputWithPast(Qwen2_5_VLCausalLMOutputWithPast):
     """
-    Output class for Qwen2VL with pointer head, extending the base output class.
+    Output class for Qwen2_5_VL with pointer head, extending the base output class.
     
     Args:
         lm_loss (`torch.FloatTensor` of shape `(1,)`, *optional*):
@@ -112,7 +112,7 @@ class VisionHead_MultiPatch(nn.Module):
         return attn_weights, loss
 
 
-class Qwen2VLForConditionalGenerationWithPointer(Qwen2VLForConditionalGeneration):
+class Qwen2_5_VLForConditionalGenerationWithPointer(Qwen2_5_VLForConditionalGeneration):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.multi_patch_pointer_head = VisionHead_MultiPatch(self.config.hidden_size, self.config.hidden_size)
@@ -141,6 +141,7 @@ class Qwen2VLForConditionalGenerationWithPointer(Qwen2VLForConditionalGeneration
                 video_grid_thw: Optional[torch.LongTensor] = None,
                 rope_deltas: Optional[torch.LongTensor] = None,
                 cache_position: Optional[torch.LongTensor] = None,
+                second_per_grid_ts: Optional[torch.Tensor] = None,
                 # Grounding
                 visual_token_indices_of_coordinates: Optional[torch.Tensor] = None, # shape: (batch_size, n_target); each element is the ground-truth index of the visual token that should be attended to for the corresponding target token
                 multi_patch_labels: Optional[torch.Tensor] = None, # shape: list [(n_target, n_visual), ...]; binary mask of patches in bbox
@@ -292,6 +293,12 @@ class Qwen2VLForConditionalGenerationWithPointer(Qwen2VLForConditionalGeneration
                     if if_multi_patch:  # task the first 4 visual tokens as the ground truth
                         sample_labels = torch.zeros_like(visual_indices).unsqueeze(0)
                         sample_labels[0][:4] = 1
+                        # n_t = target_indices.size(0)          # 目标 token 个数
+                        # n_v = visual_indices.size(0)
+                        # sample_labels = torch.zeros(
+                        #     (n_t, n_v), device=hs.device, dtype=torch.float
+                        # )
+                        # sample_labels[:, :min(4, n_v)] = 1
                     dummy_target = True
                 else:
                     # For supervision, we assume that visual_token_indices_of_coordinates[i] is a tensor of shape (n_target,)
@@ -299,6 +306,14 @@ class Qwen2VLForConditionalGenerationWithPointer(Qwen2VLForConditionalGeneration
                     gt = visual_token_indices_of_coordinates[i].to(hs.device) # shape: (n_target,)
                     if if_multi_patch:
                         sample_labels = multi_patch_labels[i]
+                        # if sample_labels is None:
+                        #     n_t = target_indices.size(0)          # 目标 token 个数
+                        #     n_v = visual_indices.size(0)
+                        #     sample_labels = torch.zeros(
+                        #         (n_t, n_v), device=hs.device, dtype=torch.float
+                        #     )
+                        #     sample_labels[:, :min(4, n_v)] = 1
+                        #     dummy_target = True
                 
                 # Gather the corresponding hidden state representations.
                 # visual_hidden = hs[visual_indices]  # shape: (n_visual, d_model)

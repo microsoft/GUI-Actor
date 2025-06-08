@@ -1,12 +1,15 @@
 #!/bin/bash
-llm_model="./checkpoints/qwen2vl_warmup"
-output_dir="./checkpoints/qwen2vl_sft"
+# model_type: qwen2vl or qwen25vl
+model_type="qwen2vl"
+llm_model="./checkpoints/${model_type}_warmup"
+output_dir="./checkpoints/${model_type}_sft"
 
 # === Training Command ===
 torchrun --nproc_per_node=4 train.py \
   --deepspeed ./scripts/zero3.json \
   --data_path data/data_config.yaml \
   --image_folder "" \
+  --model_type ${model_type} \
   --model_name_or_path ${llm_model} \
   --group_by_modality_length True \
   --bf16 True \

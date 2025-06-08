@@ -5,13 +5,14 @@ import argparse
 
 from tqdm import tqdm
 from datasets import load_dataset
-from transformers import Qwen2VLProcessor
+from transformers import AutoProcessor
 from PIL import Image
 from gui_actor.constants import chat_template
 from gui_actor.modeling import Qwen2VLForConditionalGenerationWithPointer
+from gui_actor.modeling_qwen25vl import Qwen2_5_VLForConditionalGenerationWithPointer
 from gui_actor.inference import inference, ForceFollowTokensLogitsProcessor
 from gui_actor.utils import do_boxes_overlap
-from gui_actor.constants import DEFAULT_POINTER_PAD_TOKEN, DEFAULT_POINTER_END_TOKEN, grounding_system_message
+from gui_actor.constants import DEFAULT_POINTER_PAD_TOKEN, DEFAULT_POINTER_END_TOKEN
 
 IMAGE_PATCH_SIZE =14
 
@@ -27,19 +28,33 @@ def normalize_bbox(bbox_x1y1x2y2, img_width, img_height):
         y2 = y2 / img_height
         return x1, y1, x2, y2
 
-def evaluate(model_name_or_path, data_fn, image_dir, use_placeholder, topk, resize_to_pixels=None):
+def evaluate(model_name_or_path, model_type, data_fn, image_dir, use_placeholder, topk, resize_to_pixels=None):
     # initialize model
-    data_processor = Qwen2VLProcessor.from_pretrained(model_name_or_path)
+    data_processor = AutoProcessor.from_pretrained(model_name_or_path)
     tokenizer = data_processor.tokenizer
     for k, v in tokenizer.added_tokens_encoder.items():
         print(v, k)
 
-    model = Qwen2VLForConditionalGenerationWithPointer.from_pretrained(
-        model_name_or_path,
-        torch_dtype=torch.bfloat16,
-        device_map="cuda:0",
-        attn_implementation="flash_attention_2"
-    ).eval()
+    if model_type == "qwen2vl":
+        print(f"Loading model with Qwen2-VL backbone from {model_name_or_path}")
+        model = Qwen2VLForConditionalGenerationWithPointer.from_pretrained(
+            model_name_or_path,
+            torch_dtype=torch.bfloat16,
+            device_map="cuda:0",
+            attn_implementation="flash_attention_2"
+        ).eval()
+        grounding_system_message = "You are a GUI agent. You are given a task and a screenshot of the screen. You need to perform a series of pyautogui actions to complete the task."
+    elif model_type == "qwen25vl":
+        print(f"Loading model with Qwen2.5-VL backbone from {model_name_or_path}")
+        model = Qwen2_5_VLForConditionalGenerationWithPointer.from_pretrained(
+            model_name_or_path,
+            torch_dtype=torch.bfloat16,
+            device_map="cuda:0",
+            attn_implementation="flash_attention_2"
+        ).eval()
+        grounding_system_message = "You are a GUI agent. Given a screenshot of the current GUI and a human instruction, your task is to locate the screen element that corresponds to the instruction. You should output a PyAutoGUI action that performs a click on the correct position. To indicate the click location, we will use some special tokens, which is used to refer to a visual patch later. For example, you can output: pyautogui.click(<your_special_token_here>)."
+    else:
+        raise ValueError(f"Invalid model type: {model_type}")
     print(f"Loaded model from {model_name_or_path}")
 
     logits_processor_pointer = ForceFollowTokensLogitsProcessor(
@@ -137,6 +152,8 @@ def evaluate(model_name_or_path, data_fn, image_dir, use_placeholder, topk, resi
         results.append(ele)
     
     return results
+
+
 def get_metric(list_of_examples, 
                groups=["Dev", "Creative", "CAD", "Scientific", "Office", "OS"],
                ui_types=["text", "icon"]):
@@ -247,13 +264,15 @@ def get_metric(list_of_examples,
     print(metric_info)
     return metric_info
 
+
 """
 # cd to project root directory
 python eval/screenSpot_pro.py --save_path <path_to_save_results> --data_path <path_to_data>
 """
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model_name_or_path", type=str, default="microsoft/GUI-Actor-2B-Qwen2-VL")
+    parser.add_argument("--model_type", type=str, default="qwen25vl", choices=["qwen2vl", "qwen25vl"])
+    parser.add_argument("--model_name_or_path", type=str, default="microsoft/GUI-Actor-7B-Qwen2.5-VL")
     parser.add_argument("--save_path", type=str, default="./")
     parser.add_argument("--data_path", type=str, default="/mnt/data/ScreenSpot-Pro")
     parser.add_argument("--resize_to_pixels", type=int, default=3200*1800, help="If set to <0, will not resize the image.")
@@ -281,7 +300,7 @@ if __name__ == "__main__":
             results = json.load(f)
     else:
         print(f"Evaluating {args.model_name_or_path}...")
-        results = evaluate(args.model_name_or_path, data_fn, image_dir, args.use_placeholder, args.topk, resize_to_pixels)
+        results = evaluate(args.model_name_or_path, args.model_type, data_fn, image_dir, args.use_placeholder, args.topk, resize_to_pixels)
         with open(pred_path, "w") as f:
             json.dump(results, f)
         print(f"Saved {len(results)} predictions to {pred_path}")

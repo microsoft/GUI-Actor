@@ -140,7 +140,7 @@ import torch
 
 from qwen_vl_utils import process_vision_info
 from datasets import load_dataset
-from transformers import Qwen2VLProcessor
+from transformers import AutoProcessor
 from gui_actor.constants import chat_template
 from gui_actor.modeling import Qwen2VLForConditionalGenerationWithPointer
 from gui_actor.inference import inference
@@ -148,7 +148,7 @@ from gui_actor.inference import inference
 
 # load model
 model_name_or_path = "microsoft/GUI-Actor-7B-Qwen2-VL"
-data_processor = Qwen2VLProcessor.from_pretrained(model_name_or_path)
+data_processor = AutoProcessor.from_pretrained(model_name_or_path)
 tokenizer = data_processor.tokenizer
 model = Qwen2VLForConditionalGenerationWithPointer.from_pretrained(
     model_name_or_path,
