@@ -30,6 +30,7 @@
 <a href="https://www.arxiv.org/pdf/2506.03143">📄 arXiv Paper</a> &nbsp; 
 <a href="https://aka.ms/GUI-Actor/">🌐 Project Page</a> &nbsp; 
 <a href="https://huggingface.co/microsoft/GUI-Actor-7B-Qwen2-VL">🤗 Hugging Face Models</a>
+<a href="https://huggingface.co/datasets/cckevinn/GUI-Actor-Data">📖 Data Collection</a>
 </h4>
 
 </div>
@@ -61,7 +62,7 @@ We will be releasing all the following contents:
 - [x] Model checkpoint (2025.06.03)
 - [x] Code for grounding verifier (2025.06.06)
 - [x] Support for Qwen2.5-VL (2025.06.07)
-- [ ] Processed training data
+- [x] Processed training data
 - [ ] Demo
 
 ## :bar_chart: Main Results
@@ -113,8 +114,10 @@ conda install pytorch torchvision torchaudio pytorch-cuda -c pytorch -c nvidia
 pip install -e .
 ```
 ## :minidisc: Data Preparation
-1. Download the processed data from [here (coming soon)]().
+1. Download the processed data from [here](https://huggingface.co/datasets/cckevinn/GUI-Actor-Data).
 2. Modify the paths in the [data_config.yaml](./data/data_config.yaml) file to point to the downloaded data.
+
+> We provide the original data processing scripts in `src/gui_actor/data_process.py`, but we recommend directly using our provided huggingface data collection or processing the data yourself.
 
 ## :building_construction: Model Training
 1. Warmup stage:
