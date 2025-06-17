@@ -30,6 +30,7 @@
 <a href="https://www.arxiv.org/pdf/2506.03143">📄 arXiv Paper</a> &nbsp; 
 <a href="https://aka.ms/GUI-Actor/">🌐 Project Page</a> &nbsp; 
 <a href="https://huggingface.co/microsoft/GUI-Actor-7B-Qwen2-VL">🤗 Hugging Face Models</a>
+<a href="https://huggingface.co/spaces/microsoft/GUI-Actor">🤗 Demo</a>
 </h4>
 
 </div>
@@ -62,7 +63,7 @@ We will be releasing all the following contents:
 - [x] Code for grounding verifier (2025.06.06)
 - [x] Support for Qwen2.5-VL (2025.06.07)
 - [x] Processed training data (2025.06.09)
-- [ ] Demo
+- [x] Demo (2026.06.16)
 
 ## :bar_chart: Main Results
 Table 1. Main results on ScreenSpot-Pro, ScreenSpot, and ScreenSpot-v2 with **Qwen2-VL** as the backbone. † indicates scores obtained from our own evaluation of the official models on Huggingface.
