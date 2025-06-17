@@ -29,7 +29,7 @@
 <h4>
 <a href="https://www.arxiv.org/pdf/2506.03143">📄 arXiv Paper</a> &nbsp; 
 <a href="https://aka.ms/GUI-Actor/">🌐 Project Page</a> &nbsp; 
-<a href="https://huggingface.co/microsoft/GUI-Actor-7B-Qwen2-VL">🤗 Hugging Face Models</a>
+<a href="https://huggingface.co/microsoft/GUI-Actor-7B-Qwen2-VL">🤗 Hugging Face Models</a> &nbsp;
 <a href="https://huggingface.co/spaces/microsoft/GUI-Actor">🤗 Demo</a>
 </h4>
 
