@@ -247,3 +247,7 @@ results/*
 data/data_config_test.yaml
 checkpoints
 eval/inference.ipynb
+data/data_config_amlt.yaml
+.amltconfig
+.amltignore
+launch_2.py
