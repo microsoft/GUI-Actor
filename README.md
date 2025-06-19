@@ -62,7 +62,7 @@ We will be releasing all the following contents:
 - [x] Code for grounding verifier (2025.06.06)
 - [x] Support for Qwen2.5-VL (2025.06.07)
 - [x] Processed training data (2025.06.09)
-- [ ] Demo
+- [x] [Demo](./demo) (2025.06.18)
 
 ## :bar_chart: Main Results
 Table 1. Main results on ScreenSpot-Pro, ScreenSpot, and ScreenSpot-v2 with **Qwen2-VL** as the backbone. † indicates scores obtained from our own evaluation of the official models on Huggingface.
