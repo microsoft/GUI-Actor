@@ -21,7 +21,7 @@ torchrun --nproc_per_node=4 train.py \
   --eval_strategy "no" \
   --save_strategy "steps" \
   --save_steps 2000 \
-  --learning_rate 1e-4 \
+  --learning_rate 5e-6 \
   --weight_decay 0. \
   --warmup_ratio 0.03 \
   --lr_scheduler_type "cosine" \
