@@ -277,7 +277,9 @@ def inference(conversation, model, tokenizer, data_processor, logits_processor=N
     decoder_hidden_states = decoder_hidden_states[pointer_pad_mask] # n_pointer_pad_tokens, hidden_size
 
     # get the image embeddings as encoder vectors
-    image_embeds = model.visual(inputs["pixel_values"], grid_thw=inputs["image_grid_thw"]) # n_image_tokens, hidden_size
+    # image_embeds = model.visual(inputs["pixel_values"], grid_thw=inputs["image_grid_thw"]) # n_image_tokens, hidden_size
+    image_mask = (inputs["input_ids"][0] == tokenizer.encode("<|image_pad|>")[0])
+    image_embeds = results.hidden_states[0][0][0][image_mask] # n_image_tokens, hidden_size
 
     attn_scores, _ = model.multi_patch_pointer_head(image_embeds, decoder_hidden_states)
     pred["attn_scores"] = attn_scores.tolist()
