@@ -46,7 +46,7 @@ Figure 1. **Left**: Model performance vs. training data scale on the ScreenSpot
 
 💡 **Rethink how humans interact with digital interfaces**: humans do NOT calculate precise screen coordinates before acting—they perceive the target element and interact with it directly.
 
-🚀 **We propose _GUI-Actor_, a VLM enhanced by an action head, to mitigate the above limitations.** The attention-based action head not only enables GUI-Actor to peform coordinate-free GUI grounding that more closely aligns with human behavior, but also can generate multiple candidate regions in a single forward pass, offering flexibility for downstream modules such as search strategies.
+🚀 **We propose _GUI-Actor_, a VLM enhanced by an action head, to mitigate the above limitations.** The attention-based action head not only enables GUI-Actor to perform coordinate-free GUI grounding that more closely aligns with human behavior, but also can generate multiple candidate regions in a single forward pass, offering flexibility for downstream modules such as search strategies.
 
 ➕ **We design a _grounding verifier_ to evaluate and select the most plausible action region** among the candidates proposed from the action attention map. We show that this verifier can be easily integrated with other grounding methods for a further performance boost.
 
@@ -161,7 +161,7 @@ model = Qwen2VLForConditionalGenerationWithPointer.from_pretrained(
 # prepare example
 dataset = load_dataset("rootsautomation/ScreenSpot")["test"]
 example = dataset[0]
-print(f"Intruction: {example['instruction']}")
+print(f"Instruction: {example['instruction']}")
 print(f"ground-truth action region (x1, y1, x2, y2): {[round(i, 2) for i in example['bbox']]}")
 
 conversation = [
@@ -196,7 +196,7 @@ px, py = pred["topk_points"][0]
 print(f"Predicted click point: [{round(px, 4)}, {round(py, 4)}]")
 
 # >> Model Response
-# Intruction: close this window
+# Instruction: close this window
 # ground-truth action region (x1, y1, x2, y2): [0.9479, 0.1444, 0.9938, 0.2074]
 # Predicted click point: [0.9709, 0.1548]
 ```
