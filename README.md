@@ -136,11 +136,12 @@ python eval/screenSpot_pro.py --save_path <path_to_save_results> --data_path <pa
 ```
 
 Example usage:
-You can get full inference results for `GUI-Actor-7B/2B-Qwen2-VL and GUI-Actor-7B/3B-Qwen2.5-VL` by executing the below.
+
+You can get full inference results on ScreenSpot for `GUI-Actor-7B/2B-Qwen2-VL and GUI-Actor-7B/3B-Qwen2.5-VL` by executing this command.
 ```
-python inference-Qwen.py --model_name=<model_name_or_path> --
+python inference-Qwen.py --model_name=<model_name_or_path>
 ```
-Alternatively, inference can be performed on a single sample only.
+Alternatively, the inference can be performed on a single sample only like the below.
 
 ```python
 import torch
