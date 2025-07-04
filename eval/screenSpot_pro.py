@@ -137,7 +137,8 @@ def evaluate(model_name_or_path, model_type, data_fn, image_dir, use_placeholder
             ele["hit_top1"] = 1
             ele["hit_topk"] = 1
 
-        pred_bbox = [px - IMAGE_PATCH_SIZE, py - IMAGE_PATCH_SIZE, px + IMAGE_PATCH_SIZE, py + IMAGE_PATCH_SIZE]
+        w, h = example["img_size"]
+        pred_bbox = [px - IMAGE_PATCH_SIZE / w, py - IMAGE_PATCH_SIZE / h, px + IMAGE_PATCH_SIZE / w, py + IMAGE_PATCH_SIZE / h]
         if do_boxes_overlap(pred_bbox, gt_bbox):
             ele["overlap_top1"] = 1
             ele["overlap_topk"] = 1
@@ -145,7 +146,7 @@ def evaluate(model_name_or_path, model_type, data_fn, image_dir, use_placeholder
         for px, py in topk_points[1:]:
             if (x1 <= px <= x2) and (y1 <= py <= y2):
                 ele["hit_topk"] = 1
-            pred_bbox = [px - IMAGE_PATCH_SIZE, py - IMAGE_PATCH_SIZE, px + IMAGE_PATCH_SIZE, py + IMAGE_PATCH_SIZE]
+            pred_bbox = [px - IMAGE_PATCH_SIZE / w, py - IMAGE_PATCH_SIZE / h, px + IMAGE_PATCH_SIZE / w, py + IMAGE_PATCH_SIZE / h]
             if do_boxes_overlap(pred_bbox, gt_bbox):
                 ele["overlap_topk"] = 1
 
