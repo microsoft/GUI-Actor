@@ -11,7 +11,7 @@ Pillow==11.1.0
 opencv-python-headless==4.11.0.86
 datasets==3.6.0
 
-transformers==4.51.3
+transformers==4.53.0
 qwen-vl-utils==0.0.8
 
 pre-commit==4.2.0
