@@ -7,7 +7,7 @@ gradio
 gradio_client
 spaces
 
-Pillow==11.1.0
+Pillow==12.1.1
 opencv-python-headless==4.11.0.86
 datasets==3.6.0
 
